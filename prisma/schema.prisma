@@ -1,0 +1,101 @@
+// ============================================================
+// Stuga-bokning — databasschema
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// Roller:
+//  ADMIN   - förvaltaren (du) - full åtkomst, hanterar allt
+//  OWNER   - gårdens ägare - ser allt, kan boka
+//  PARTNER - partners i Polen - ser tillgänglighet, bokar veckor
+//            (kan begränsas till valda properties via PropertyAccess)
+// ------------------------------------------------------------
+enum Role {
+  ADMIN
+  OWNER
+  PARTNER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(PARTNER)
+  createdAt     DateTime @default(now())
+
+  bookings      Booking[]
+  propertyAccess PropertyAccess[]
+
+  @@map("users")
+}
+
+// Vilka properties en PARTNER-användare får se/boka.
+// ADMIN och OWNER ser alltid alla properties (hanteras i app-logik).
+model PropertyAccess {
+  id         String   @id @default(cuid())
+  userId     String
+  propertyId String
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@map("property_access")
+}
+
+model Property {
+  id              String   @id @default(cuid())
+  name            String   // t.ex. "Stuga 1 - Sjöstugan"
+  description     String?
+  color           String   @default("#2563eb") // för kalenderfärg
+  airbnbIcalUrl   String?  // export-URL från Airbnb (per listing)
+  lastSyncedAt    DateTime?
+  createdAt       DateTime @default(now())
+
+  bookings Booking[]
+  access   PropertyAccess[]
+
+  @@map("properties")
+}
+
+enum BookingSource {
+  INTERNAL // bokad via vårt system
+  AIRBNB   // synkad in från Airbnb iCal
+  MANUAL   // manuellt inlagd block (t.ex. underhåll)
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  propertyId  String
+  userId      String?       // vem som bokade (null om Airbnb/MANUAL)
+  startDate   DateTime      // incheckning (00:00)
+  endDate     DateTime      // utcheckning (00:00, exkl.)
+  guestName   String?
+  notes       String?
+  source      BookingSource @default(INTERNAL)
+  status      BookingStatus @default(CONFIRMED)
+  externalId  String?       // Airbnb UID från iCal, för att matcha vid sync
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user     User?     @relation(fields: [userId], references: [id])
+
+  @@index([propertyId, startDate, endDate])
+  @@unique([propertyId, externalId])
+  @@map("bookings")
+}

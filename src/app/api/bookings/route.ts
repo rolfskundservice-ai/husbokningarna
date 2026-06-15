@@ -1,0 +1,128 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { z } from "zod";
+import { BookingSource, BookingStatus } from "@prisma/client";
+
+// GET /api/bookings?propertyId=...&from=YYYY-MM-DD&to=YYYY-MM-DD
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+
+  const { searchParams } = new URL(req.url);
+  const propertyId = searchParams.get("propertyId");
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+
+  // Säkerställ att PARTNER bara kan se properties de har åtkomst till
+  if (session.user.role === "PARTNER" && propertyId) {
+    const access = await prisma.propertyAccess.findUnique({
+      where: { userId_propertyId: { userId: session.user.id, propertyId } },
+    });
+    if (!access) return NextResponse.json({ error: "Ingen åtkomst" }, { status: 403 });
+  }
+
+  const where: Record<string, unknown> = { status: BookingStatus.CONFIRMED };
+  if (propertyId) where.propertyId = propertyId;
+  if (from && to) {
+    // Bokningar som överlappar [from, to)
+    where.AND = [{ startDate: { lt: new Date(to) } }, { endDate: { gt: new Date(from) } }];
+  }
+
+  const bookings = await prisma.booking.findMany({
+    where,
+    include: { user: { select: { name: true } } },
+    orderBy: { startDate: "asc" },
+  });
+
+  return NextResponse.json(
+    bookings.map((b) => ({
+      id: b.id,
+      propertyId: b.propertyId,
+      userId: b.userId,
+      userName: b.user?.name ?? null,
+      startDate: b.startDate.toISOString(),
+      endDate: b.endDate.toISOString(),
+      guestName: b.guestName,
+      notes: b.notes,
+      source: b.source,
+      status: b.status,
+    }))
+  );
+}
+
+const createBookingSchema = z.object({
+  propertyId: z.string().min(1),
+  startDate: z.string(), // YYYY-MM-DD
+  endDate: z.string(), // YYYY-MM-DD (exklusiv)
+  guestName: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+// POST /api/bookings  - skapa en intern bokning
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
+
+  const body = await req.json();
+  const parsed = createBookingSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const { propertyId, startDate, endDate, guestName, notes } = parsed.data;
+
+  if (session.user.role === "PARTNER") {
+    const access = await prisma.propertyAccess.findUnique({
+      where: { userId_propertyId: { userId: session.user.id, propertyId } },
+    });
+    if (!access) return NextResponse.json({ error: "Ingen åtkomst till denna stuga" }, { status: 403 });
+  }
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (end <= start) {
+    return NextResponse.json({ error: "Slutdatum måste vara efter startdatum" }, { status: 400 });
+  }
+
+  // Kontrollera krock med befintliga bokningar (oavsett källa)
+  const overlapping = await prisma.booking.findFirst({
+    where: {
+      propertyId,
+      status: BookingStatus.CONFIRMED,
+      startDate: { lt: end },
+      endDate: { gt: start },
+    },
+  });
+
+  if (overlapping) {
+    return NextResponse.json(
+      {
+        error: "Perioden krockar med en befintlig bokning",
+        conflict: {
+          startDate: overlapping.startDate.toISOString(),
+          endDate: overlapping.endDate.toISOString(),
+          source: overlapping.source,
+        },
+      },
+      { status: 409 }
+    );
+  }
+
+  const booking = await prisma.booking.create({
+    data: {
+      propertyId,
+      userId: session.user.id,
+      startDate: start,
+      endDate: end,
+      guestName: guestName || null,
+      notes: notes || null,
+      source: BookingSource.INTERNAL,
+      status: BookingStatus.CONFIRMED,
+    },
+  });
+
+  return NextResponse.json(booking, { status: 201 });
+}
