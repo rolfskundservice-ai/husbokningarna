@@ -84,8 +84,10 @@ model Booking {
   userId      String?       // vem som bokade (null om Airbnb/MANUAL)
   startDate   DateTime      // incheckning (00:00)
   endDate     DateTime      // utcheckning (00:00, exkl.)
-  guestName   String?
-  notes       String?
+  guestName       String?
+  notes           String?
+  numberOfPersons Int?
+  numberOfBoats   Int?
   source      BookingSource @default(INTERNAL)
   status      BookingStatus @default(CONFIRMED)
   externalId  String?       // Airbnb UID från iCal, för att matcha vid sync

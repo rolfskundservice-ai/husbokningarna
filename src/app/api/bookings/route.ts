@@ -44,6 +44,8 @@ export async function GET(req: Request) {
       endDate: b.endDate.toISOString(),
       guestName: b.guestName,
       notes: b.notes,
+      numberOfPersons: b.numberOfPersons,
+      numberOfBoats: b.numberOfBoats,
       source: b.source,
       status: b.status,
     }))
@@ -56,6 +58,8 @@ const createBookingSchema = z.object({
   endDate: z.string(),
   guestName: z.string().optional(),
   notes: z.string().optional(),
+  numberOfPersons: z.number().int().min(1).optional(),
+  numberOfBoats: z.number().int().min(0).optional(),
 });
 
 export async function POST(req: Request) {
@@ -68,7 +72,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { propertyId, startDate, endDate, guestName, notes } = parsed.data;
+  const { propertyId, startDate, endDate, guestName, notes, numberOfPersons, numberOfBoats } = parsed.data;
 
   if (session.user.role === "PARTNER") {
     const access = await prisma.propertyAccess.findUnique({
@@ -95,14 +99,7 @@ export async function POST(req: Request) {
 
   if (overlapping) {
     return NextResponse.json(
-      {
-        error: "Perioden krockar med en befintlig bokning",
-        conflict: {
-          startDate: overlapping.startDate.toISOString(),
-          endDate: overlapping.endDate.toISOString(),
-          source: overlapping.source,
-        },
-      },
+      { error: "Perioden krockar med en befintlig bokning" },
       { status: 409 }
     );
   }
@@ -115,12 +112,13 @@ export async function POST(req: Request) {
       endDate: end,
       guestName: guestName || null,
       notes: notes || null,
+      numberOfPersons: numberOfPersons ?? null,
+      numberOfBoats: numberOfBoats ?? null,
       source: BookingSource.INTERNAL,
       status: BookingStatus.CONFIRMED,
     },
   });
 
-  // Hämta stugnamn för e-postnotis (fire-and-forget)
   prisma.property.findUnique({ where: { id: propertyId }, select: { name: true } }).then((p) => {
     if (!p) return;
     sendBookingNotification({
@@ -129,7 +127,7 @@ export async function POST(req: Request) {
       guestName: guestName ?? null,
       bookedBy: session.user.name,
       notes: notes ?? null,
-    }).catch(() => {/* e-post är valfritt */});
+    }).catch(() => {});
   });
 
   return NextResponse.json(booking, { status: 201 });
