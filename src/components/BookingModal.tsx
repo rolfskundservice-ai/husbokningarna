@@ -52,56 +52,64 @@ export function BookingModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)" }}>
+      <div className="w-full max-w-md rounded-xl p-6" style={{ background: "#141414", border: "1px solid rgba(255,255,255,0.1)" }}>
         <div className="mb-4 flex items-start justify-between">
-          <h2 className="text-lg font-semibold">{week.label}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <div>
+            <h2 className="text-lg font-semibold text-white">{week.label}</h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {formatDateRange(week.startDate, week.endDate)}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-300 transition text-lg leading-none">
             ✕
           </button>
         </div>
 
         {isAvailable ? (
           <form onSubmit={handleBook} className="space-y-4">
-            <p className="text-sm text-gray-500">Denna vecka är ledig. Boka den här:</p>
+            <p className="text-sm text-gray-500">Denna vecka är ledig. Boka den nedan:</p>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Gästnamn (valfritt)
+              <label className="mb-1 block text-sm font-medium text-gray-300">
+                Gästnamn <span className="text-gray-600">(valfritt)</span>
               </label>
               <input
                 type="text"
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="input-dark w-full"
                 placeholder="Namn på fiskegrupp/gäst"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
-                Anteckning (valfritt)
+              <label className="mb-1 block text-sm font-medium text-gray-300">
+                Anteckning <span className="text-gray-600">(valfritt)</span>
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="input-dark w-full resize-none"
                 rows={2}
+                placeholder="T.ex. antal gäster, önskemål..."
               />
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-400">{error}</p>}
 
             <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                className="rounded-lg px-4 py-2 text-sm text-gray-400 hover:text-white transition"
+                style={{ border: "1px solid rgba(255,255,255,0.1)" }}
               >
                 Avbryt
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:opacity-60"
+                style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)" }}
               >
                 {loading ? "Bokar..." : "Boka vecka"}
               </button>
@@ -110,17 +118,22 @@ export function BookingModal({
         ) : (
           <div className="space-y-3">
             {week.bookings.map((b) => (
-              <div key={b.id} className="rounded-lg border border-gray-200 p-3">
-                <div className="text-sm font-medium">
+              <div key={b.id} className="rounded-lg p-3" style={{ background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div className="text-sm font-medium text-white">
                   {b.guestName || b.userName || "Bokad"}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-gray-500 mt-0.5">
                   {b.source === "AIRBNB" ? "Bokad via Airbnb" : `Bokad av ${b.userName ?? "okänd"}`}
                 </div>
+                {b.notes && (
+                  <div className="mt-2 text-xs text-gray-400 italic">
+                    📝 {b.notes}
+                  </div>
+                )}
                 {b.source !== "AIRBNB" && (
                   <button
                     onClick={() => onDelete(b.id)}
-                    className="mt-2 text-xs font-medium text-red-600 hover:underline"
+                    className="mt-2 text-xs font-medium text-red-500 hover:text-red-400 transition"
                   >
                     Ta bort bokning
                   </button>
@@ -130,7 +143,8 @@ export function BookingModal({
             <div className="flex justify-end">
               <button
                 onClick={onClose}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                className="rounded-lg px-4 py-2 text-sm text-gray-400 hover:text-white transition"
+                style={{ border: "1px solid rgba(255,255,255,0.1)" }}
               >
                 Stäng
               </button>
@@ -140,4 +154,12 @@ export function BookingModal({
       </div>
     </div>
   );
+}
+
+function formatDateRange(start: string, end: string) {
+  const s = new Date(start);
+  const e = new Date(end);
+  e.setDate(e.getDate() - 1);
+  const fmt = (d: Date) => d.toLocaleDateString("sv-SE", { day: "numeric", month: "long" });
+  return `${fmt(s)} – ${fmt(e)}`;
 }

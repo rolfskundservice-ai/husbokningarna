@@ -13,13 +13,15 @@ export default async function AdminPropertiesPage() {
   const properties = await prisma.property.findMany({ orderBy: { name: "asc" } });
 
   return (
-    <div>
+    <div className="min-h-screen">
       <Navbar />
       <main className="mx-auto max-w-4xl px-4 py-8">
-        <h1 className="mb-1 text-2xl font-semibold">Hantera stugor</h1>
-        <p className="mb-6 text-sm text-gray-500">
-          Lägg till Airbnb-kalenderlänk (iCal export) per stuga för automatisk synk.
-        </p>
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-white">Hantera stugor</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Lägg till Airbnb-kalenderlänk (iCal export) per stuga för automatisk synk.
+          </p>
+        </div>
         <AdminPropertyList
           properties={properties.map((p) => ({
             id: p.id,

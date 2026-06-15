@@ -5,8 +5,6 @@ import { prisma } from "@/lib/db";
 import { getWeeksInRange } from "@/lib/weeks";
 import { BookingStatus } from "@prisma/client";
 
-// GET /api/availability/:propertyId?from=YYYY-MM-DD&weeks=12
-// Returnerar en lista av veckor med status: AVAILABLE | BOOKED_INTERNAL | BOOKED_AIRBNB
 export async function GET(req: Request, { params }: { params: { propertyId: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
@@ -70,6 +68,7 @@ export async function GET(req: Request, { params }: { params: { propertyId: stri
         startDate: b.startDate.toISOString(),
         endDate: b.endDate.toISOString(),
         guestName: b.guestName,
+        notes: b.notes,
         source: b.source,
         userName: b.user?.name ?? null,
       })),

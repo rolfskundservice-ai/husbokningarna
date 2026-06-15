@@ -4,8 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { BookingSource, BookingStatus } from "@prisma/client";
+import { sendBookingNotification } from "@/lib/email";
 
-// GET /api/bookings?propertyId=...&from=YYYY-MM-DD&to=YYYY-MM-DD
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
@@ -15,7 +15,6 @@ export async function GET(req: Request) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  // Säkerställ att PARTNER bara kan se properties de har åtkomst till
   if (session.user.role === "PARTNER" && propertyId) {
     const access = await prisma.propertyAccess.findUnique({
       where: { userId_propertyId: { userId: session.user.id, propertyId } },
@@ -26,7 +25,6 @@ export async function GET(req: Request) {
   const where: Record<string, unknown> = { status: BookingStatus.CONFIRMED };
   if (propertyId) where.propertyId = propertyId;
   if (from && to) {
-    // Bokningar som överlappar [from, to)
     where.AND = [{ startDate: { lt: new Date(to) } }, { endDate: { gt: new Date(from) } }];
   }
 
@@ -54,13 +52,12 @@ export async function GET(req: Request) {
 
 const createBookingSchema = z.object({
   propertyId: z.string().min(1),
-  startDate: z.string(), // YYYY-MM-DD
-  endDate: z.string(), // YYYY-MM-DD (exklusiv)
+  startDate: z.string(),
+  endDate: z.string(),
   guestName: z.string().optional(),
   notes: z.string().optional(),
 });
 
-// POST /api/bookings  - skapa en intern bokning
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Ej inloggad" }, { status: 401 });
@@ -87,7 +84,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Slutdatum måste vara efter startdatum" }, { status: 400 });
   }
 
-  // Kontrollera krock med befintliga bokningar (oavsett källa)
   const overlapping = await prisma.booking.findFirst({
     where: {
       propertyId,
@@ -122,6 +118,18 @@ export async function POST(req: Request) {
       source: BookingSource.INTERNAL,
       status: BookingStatus.CONFIRMED,
     },
+  });
+
+  // Hämta stugnamn för e-postnotis (fire-and-forget)
+  prisma.property.findUnique({ where: { id: propertyId }, select: { name: true } }).then((p) => {
+    if (!p) return;
+    sendBookingNotification({
+      propertyName: p.name,
+      weekLabel: `${startDate} – ${endDate}`,
+      guestName: guestName ?? null,
+      bookedBy: session.user.name,
+      notes: notes ?? null,
+    }).catch(() => {/* e-post är valfritt */});
   });
 
   return NextResponse.json(booking, { status: 201 });

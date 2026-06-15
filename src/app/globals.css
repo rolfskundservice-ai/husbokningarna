@@ -3,5 +3,45 @@
 @tailwind utilities;
 
 body {
-  @apply bg-gray-50 text-gray-900;
+  @apply bg-[#0a0a0a] text-white;
+}
+
+/* Week calendar card variants */
+.week-available {
+  background: radial-gradient(circle at top left, rgba(34,197,94,0.12) 0%, transparent 65%), #141414;
+  border: 1px solid rgba(34,197,94,0.2);
+}
+.week-available:hover {
+  background: radial-gradient(circle at top left, rgba(34,197,94,0.2) 0%, transparent 65%), #1a1a1a;
+  border-color: rgba(34,197,94,0.4);
+}
+.week-booked-internal {
+  background: radial-gradient(circle at top left, rgba(59,130,246,0.12) 0%, transparent 65%), #141414;
+  border: 1px solid rgba(59,130,246,0.2);
+}
+.week-booked-airbnb {
+  background: radial-gradient(circle at top left, rgba(249,115,22,0.12) 0%, transparent 65%), #141414;
+  border: 1px solid rgba(249,115,22,0.2);
+}
+.week-partial {
+  background: radial-gradient(circle at top left, rgba(234,179,8,0.12) 0%, transparent 65%), #141414;
+  border: 1px solid rgba(234,179,8,0.2);
+}
+
+/* Dark card base */
+.dark-card {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0.75rem;
+}
+
+/* Input dark */
+.input-dark {
+  @apply w-full rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1;
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.input-dark:focus {
+  border-color: rgba(99,102,241,0.6);
+  box-shadow: 0 0 0 1px rgba(99,102,241,0.3);
 }

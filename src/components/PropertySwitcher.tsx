@@ -26,22 +26,25 @@ export function PropertySwitcher({ properties }: { properties: Property[] }) {
           <button
             key={p.id}
             onClick={() => setActiveId(p.id)}
-            className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition ${
+            className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition"
+            style={
               p.id === active.id
-                ? "border-brand-600 bg-brand-600 text-white"
-                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-            }`}
+                ? { background: p.color, color: "#fff", border: `1px solid ${p.color}` }
+                : { background: "#1c1c1c", color: "#9ca3af", border: "1px solid rgba(255,255,255,0.1)" }
+            }
           >
             <span
               className="mr-2 inline-block h-2 w-2 rounded-full"
-              style={{ backgroundColor: p.color }}
+              style={{ backgroundColor: p.id === active.id ? "rgba(255,255,255,0.7)" : p.color }}
             />
             {p.name}
           </button>
         ))}
       </div>
 
-      {active.description && <p className="mb-4 text-sm text-gray-500">{active.description}</p>}
+      {active.description && (
+        <p className="mb-4 text-sm text-gray-500">{active.description}</p>
+      )}
 
       <WeekCalendar key={active.id} propertyId={active.id} />
     </div>

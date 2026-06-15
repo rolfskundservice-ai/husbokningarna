@@ -15,16 +15,24 @@ export interface WeekData {
     startDate: string;
     endDate: string;
     guestName: string | null;
+    notes: string | null;
     source: "INTERNAL" | "AIRBNB" | "MANUAL";
     userName: string | null;
   }[];
 }
 
-const STATUS_STYLES: Record<WeekData["status"], string> = {
-  AVAILABLE: "bg-green-50 border-green-200 hover:bg-green-100",
-  BOOKED_INTERNAL: "bg-blue-50 border-blue-200",
-  BOOKED_AIRBNB: "bg-orange-50 border-orange-200",
-  PARTIAL: "bg-yellow-50 border-yellow-200",
+const STATUS_CSS: Record<WeekData["status"], string> = {
+  AVAILABLE: "week-available cursor-pointer",
+  BOOKED_INTERNAL: "week-booked-internal",
+  BOOKED_AIRBNB: "week-booked-airbnb",
+  PARTIAL: "week-partial cursor-pointer",
+};
+
+const STATUS_DOT: Record<WeekData["status"], string> = {
+  AVAILABLE: "bg-green-400",
+  BOOKED_INTERNAL: "bg-blue-400",
+  BOOKED_AIRBNB: "bg-orange-400",
+  PARTIAL: "bg-yellow-400",
 };
 
 const STATUS_LABELS: Record<WeekData["status"], string> = {
@@ -74,7 +82,8 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
           <select
             value={weeksAhead}
             onChange={(e) => setWeeksAhead(Number(e.target.value))}
-            className="rounded-lg border border-gray-300 px-2 py-1"
+            className="rounded-lg px-2 py-1 text-sm text-white focus:outline-none"
+            style={{ background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.12)" }}
           >
             <option value={8}>8 veckor</option>
             <option value={16}>16 veckor</option>
@@ -85,22 +94,25 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-gray-400">Laddar kalender...</div>
+        <div className="py-12 text-center text-gray-600">Laddar kalender...</div>
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {weeks.map((week) => (
             <button
               key={`${week.year}-${week.weekNumber}`}
               onClick={() => setSelectedWeek(week)}
-              className={`rounded-lg border p-3 text-left transition ${STATUS_STYLES[week.status]}`}
+              className={`rounded-xl p-3 text-left transition ${STATUS_CSS[week.status]}`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-medium">{week.label}</span>
+                <span className="font-medium text-white text-sm">{week.label}</span>
+                <span className={`h-2 w-2 rounded-full ${STATUS_DOT[week.status]}`} />
               </div>
-              <div className="mt-1 text-xs text-gray-600">
+              <div className="mt-1 text-xs text-gray-500">
                 {formatDateRange(week.startDate, week.endDate)}
               </div>
-              <div className="mt-2 text-xs font-medium">{STATUS_LABELS[week.status]}</div>
+              <div className="mt-2 text-xs font-medium text-gray-400">
+                {STATUS_LABELS[week.status]}
+              </div>
               {week.bookings.map((b) => (
                 <div key={b.id} className="mt-1 truncate text-xs text-gray-500">
                   {b.guestName || b.userName || "Bokad"}
@@ -130,19 +142,19 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
 
 function Legend() {
   return (
-    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
-      <LegendItem color="bg-green-100 border-green-300" label="Ledig" />
-      <LegendItem color="bg-blue-100 border-blue-300" label="Bokad (internt)" />
-      <LegendItem color="bg-orange-100 border-orange-300" label="Bokad (Airbnb)" />
-      <LegendItem color="bg-yellow-100 border-yellow-300" label="Delvis bokad" />
+    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+      <LegendItem color="bg-green-400" label="Ledig" />
+      <LegendItem color="bg-blue-400" label="Bokad (internt)" />
+      <LegendItem color="bg-orange-400" label="Bokad (Airbnb)" />
+      <LegendItem color="bg-yellow-400" label="Delvis bokad" />
     </div>
   );
 }
 
 function LegendItem({ color, label }: { color: string; label: string }) {
   return (
-    <span className="flex items-center gap-1">
-      <span className={`h-3 w-3 rounded border ${color}`} />
+    <span className="flex items-center gap-1.5">
+      <span className={`h-2 w-2 rounded-full ${color}`} />
       {label}
     </span>
   );
@@ -150,7 +162,6 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 
 function formatDateRange(start: string, end: string) {
   const s = new Date(start);
-  // end är exklusiv (nästa veckas start), visa sista dagen som end - 1
   const e = new Date(end);
   e.setDate(e.getDate() - 1);
   const fmt = (d: Date) => d.toLocaleDateString("sv-SE", { day: "numeric", month: "short" });

@@ -12,6 +12,11 @@ const config: Config = {
           600: "#2563eb",
           700: "#1d4ed8",
         },
+        surface: {
+          DEFAULT: "#141414",
+          raised: "#1c1c1c",
+          border: "rgba(255,255,255,0.08)",
+        },
       },
     },
   },
