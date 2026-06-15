@@ -200,13 +200,13 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
       {loading ? (
         <div className="py-20 text-center text-gray-600">Laddar kalender…</div>
       ) : (
-        <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
           <table className="border-collapse w-full" style={{ minWidth: 640 }}>
             {/* Day-name header */}
             <thead>
-              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <tr style={{ background: "rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
                 <th
-                  className="py-3 pl-4 pr-2 text-left text-xs font-medium text-gray-600 select-none"
+                  className="py-4 pl-4 pr-3 text-left text-xs font-semibold text-gray-600 select-none"
                   style={{ width: 56 }}
                 >
                   V.
@@ -214,10 +214,12 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                 {DAY_NAMES.map((d, i) => (
                   <th
                     key={d}
-                    className="py-3 px-1 text-center text-xs font-medium select-none"
+                    className="py-4 px-1 text-center text-xs font-bold tracking-wide select-none"
                     style={{
-                      color: i >= 5 ? "rgba(99,102,241,0.7)" : "#6b7280",
-                      minWidth: 80,
+                      color: i >= 5 ? "#818cf8" : "#9ca3af",
+                      minWidth: 84,
+                      background: i >= 5 ? "rgba(99,102,241,0.06)" : "transparent",
+                      borderLeft: "1px solid rgba(255,255,255,0.05)",
                     }}
                   >
                     {d}
@@ -238,15 +240,21 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                       <tr key={`month-${wi}`}>
                         <td
                           colSpan={8}
-                          className="pt-4 pb-1 pl-4 text-xs font-semibold tracking-wider uppercase"
-                          style={{ color: "rgba(255,255,255,0.25)" }}
+                          className="pt-5 pb-2 pl-4 text-xs font-bold tracking-widest uppercase"
+                          style={{
+                            color: "rgba(255,255,255,0.35)",
+                            borderTop: wi > 0 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                          }}
                         >
                           {MONTHS_SV[firstDay.getMonth()]} {firstDay.getFullYear()}
                         </td>
                       </tr>
                     )}
-                    <tr key={`${week.year}-${week.weekNumber}`}>
-                      <td className="py-1 pl-4 pr-2 text-xs font-medium text-gray-700 align-middle select-none">
+                    <tr
+                      key={`${week.year}-${week.weekNumber}`}
+                      style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+                    >
+                      <td className="py-1.5 pl-4 pr-3 text-xs font-bold text-gray-700 align-middle select-none whitespace-nowrap">
                         {week.weekNumber}
                       </td>
                       {week.days.map((day) => {
@@ -259,14 +267,21 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                         const isClickable = status !== "past";
 
                         return (
-                          <td key={dateKey(day)} className="p-1 align-top">
+                          <td
+                            key={dateKey(day)}
+                            className="p-1 align-top"
+                            style={{
+                              borderLeft: "1px solid rgba(255,255,255,0.05)",
+                              background: isWeekend ? "rgba(99,102,241,0.03)" : "transparent",
+                            }}
+                          >
                             <div
                               className={`${cssClass} rounded-lg transition-all`}
                               style={{
                                 cursor: isClickable ? "pointer" : "default",
-                                minHeight: 72,
-                                padding: "8px 6px",
-                                opacity: status === "past" ? 0.4 : 1,
+                                minHeight: 76,
+                                padding: "8px 7px",
+                                opacity: status === "past" ? 0.35 : 1,
                               }}
                               onClick={() => isClickable && handleDayClick(day, status, booking)}
                               onMouseEnter={() => selectStart && isClickable && setHoverDay(day)}
@@ -280,8 +295,8 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                                 >
                                   {day.getDate()}
                                 </span>
-                                {isWeekend && status === "available" && (
-                                  <span className="text-[9px] leading-none" style={{ color: "rgba(99,102,241,0.5)" }}>
+                                {isWeekend && (
+                                  <span className="text-[9px] font-semibold leading-none" style={{ color: "rgba(129,140,248,0.6)" }}>
                                     {day.getDay() === 6 ? "Lör" : "Sön"}
                                   </span>
                                 )}
