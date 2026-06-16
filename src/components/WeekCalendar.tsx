@@ -59,25 +59,37 @@ function generateWeeks(from: Date, count: number): WeekRow[] {
   });
 }
 
-function getDayStatus(date: Date, bookings: Booking[]): { status: DayStatus; booking: Booking | null } {
+interface DayInfo {
+  status: DayStatus;
+  booking: Booking | null;
+  isArrival: boolean;    // first day of a booking
+  isDeparture: boolean;  // last day (endDate - 1) of a booking
+}
+
+function getDayStatus(date: Date, bookings: Booking[]): DayInfo {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  if (date.getTime() === today.getTime()) {
-    for (const b of bookings) {
-      const start = new Date(b.startDate);
-      const end = new Date(b.endDate);
-      if (date >= start && date < end)
-        return { status: b.source === "AIRBNB" ? "booked_airbnb" : "booked_internal", booking: b };
-    }
-    return { status: "today", booking: null };
-  }
-  if (date < today) return { status: "past", booking: null };
+  const isPast = date < today;
+  const isToday = date.getTime() === today.getTime();
+
   for (const b of bookings) {
     const start = new Date(b.startDate);
     const end = new Date(b.endDate);
-    if (date >= start && date < end)
-      return { status: b.source === "AIRBNB" ? "booked_airbnb" : "booked_internal", booking: b };
+    if (date >= start && date < end) {
+      const status = isToday
+        ? (b.source === "AIRBNB" ? "booked_airbnb" : "booked_internal")
+        : (b.source === "AIRBNB" ? "booked_airbnb" : "booked_internal");
+      return {
+        status,
+        booking: b,
+        isArrival: dateKey(date) === dateKey(start),
+        isDeparture: dateKey(addDays(date, 1)) === dateKey(end),
+      };
+    }
   }
-  return { status: "available", booking: null };
+
+  if (isPast) return { status: "past", booking: null, isArrival: false, isDeparture: false };
+  if (isToday) return { status: "today", booking: null, isArrival: false, isDeparture: false };
+  return { status: "available", booking: null, isArrival: false, isDeparture: false };
 }
 
 function dayCssClass(status: DayStatus, inRange: boolean, isStart: boolean): string {
@@ -92,11 +104,11 @@ function dayCssClass(status: DayStatus, inRange: boolean, isStart: boolean): str
 }
 
 function dayTextColor(status: DayStatus, inRange: boolean, isStart: boolean): string {
-  if (inRange || isStart)         return "#a5b4fc";
-  if (status === "past")          return "#374151";
-  if (status === "today")         return "#4ade80";
-  if (status === "booked_internal") return "#93c5fd";
-  if (status === "booked_airbnb")   return "#fdba74";
+  if (inRange || isStart)           return "#c7d2fe";
+  if (status === "past")            return "#4b5563";
+  if (status === "today")           return "#4ade80";
+  if (status === "booked_internal") return "#bfdbfe";
+  if (status === "booked_airbnb")   return "#fed7aa";
   return "#9ca3af";
 }
 
@@ -126,7 +138,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  function handleDayClick(day: Date, status: DayStatus, booking: Booking | null) {
+  function handleDayClick(day: Date, status: DayStatus, booking: Booking | null, _isArrival?: boolean) {
     if (status === "past") return;
 
     if (status === "booked_internal" || status === "booked_airbnb") {
@@ -258,13 +270,15 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                         {week.weekNumber}
                       </td>
                       {week.days.map((day) => {
-                        const { status, booking } = getDayStatus(day, bookings);
+                        const { status, booking, isArrival, isDeparture } = getDayStatus(day, bookings);
                         const inRange = isInRange(day);
                         const isStart = selectStart != null && dateKey(day) === dateKey(selectStart);
                         const cssClass = dayCssClass(status, inRange, isStart);
                         const textColor = dayTextColor(status, inRange, isStart);
                         const isWeekend = day.getDay() === 6 || day.getDay() === 0;
                         const isClickable = status !== "past";
+                        const isBooked = status === "booked_internal" || status === "booked_airbnb";
+                        const arrivalColor = status === "booked_airbnb" ? "#f97316" : "#3b82f6";
 
                         return (
                           <td
@@ -276,26 +290,45 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                             }}
                           >
                             <div
-                              className={`${cssClass} rounded-lg transition-all`}
+                              className={`${cssClass} rounded-lg transition-all relative overflow-hidden`}
                               style={{
                                 cursor: isClickable ? "pointer" : "default",
                                 minHeight: 76,
                                 padding: "8px 7px",
                                 opacity: status === "past" ? 0.35 : 1,
+                                // Extra left-border stripe on arrival days
+                                borderLeft: isArrival
+                                  ? `3px solid ${arrivalColor}`
+                                  : undefined,
                               }}
                               onClick={() => isClickable && handleDayClick(day, status, booking)}
                               onMouseEnter={() => selectStart && isClickable && setHoverDay(day)}
                               onMouseLeave={() => selectStart && setHoverDay(null)}
                             >
+                              {/* Arrival / departure badges */}
+                              {isArrival && (
+                                <span
+                                  className="absolute top-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
+                                  style={{ background: arrivalColor, color: "#fff", opacity: 0.9 }}
+                                >
+                                  IN
+                                </span>
+                              )}
+                              {isDeparture && !isArrival && (
+                                <span
+                                  className="absolute top-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
+                                  style={{ background: "rgba(255,255,255,0.12)", color: "#9ca3af" }}
+                                >
+                                  UT
+                                </span>
+                              )}
+
                               {/* Date number */}
                               <div className="flex items-start justify-between">
-                                <span
-                                  className="text-sm font-bold leading-none"
-                                  style={{ color: textColor }}
-                                >
+                                <span className="text-sm font-bold leading-none" style={{ color: textColor }}>
                                   {day.getDate()}
                                 </span>
-                                {isWeekend && (
+                                {isWeekend && !isArrival && !isDeparture && (
                                   <span className="text-[9px] font-semibold leading-none" style={{ color: "rgba(129,140,248,0.6)" }}>
                                     {day.getDay() === 6 ? "Lör" : "Sön"}
                                   </span>
@@ -309,30 +342,26 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                                 </div>
                               )}
 
-                              {/* Booking info */}
-                              {(status === "booked_internal") && booking && (
+                              {/* Booking info — only on arrival day to avoid repetition */}
+                              {isBooked && booking && isArrival && (
                                 <div className="mt-2 space-y-0.5">
                                   {(booking.guestName || booking.userName) && (
                                     <div
-                                      className="text-[11px] font-medium leading-tight truncate"
+                                      className="text-[11px] font-semibold leading-tight truncate"
                                       style={{ color: textColor, maxWidth: 72 }}
                                     >
                                       {booking.guestName || booking.userName}
                                     </div>
                                   )}
-                                  <div className="flex items-center gap-1 text-[10px]" style={{ color: textColor, opacity: 0.7 }}>
-                                    {booking.numberOfPersons && (
-                                      <span>👤 {booking.numberOfPersons}</span>
-                                    )}
-                                    {booking.numberOfBoats != null && booking.numberOfBoats > 0 && (
-                                      <span>🚤 {booking.numberOfBoats}</span>
-                                    )}
+                                  <div className="flex items-center gap-1 text-[10px]" style={{ color: textColor, opacity: 0.75 }}>
+                                    {booking.numberOfPersons && <span>👤{booking.numberOfPersons}</span>}
+                                    {(booking.numberOfBoats ?? 0) > 0 && <span>🚤{booking.numberOfBoats}</span>}
                                   </div>
-                                </div>
-                              )}
-                              {status === "booked_airbnb" && (
-                                <div className="mt-2 text-[10px] font-medium" style={{ color: textColor, opacity: 0.8 }}>
-                                  Airbnb
+                                  {status === "booked_airbnb" && (
+                                    <div className="text-[9px] font-bold uppercase tracking-wide" style={{ color: textColor, opacity: 0.6 }}>
+                                      Airbnb
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>

@@ -28,32 +28,32 @@ body::before {
 
 /* Week calendar day cells */
 .day-available {
-  background: radial-gradient(circle at top left, rgba(34,197,94,0.10) 0%, rgba(34,197,94,0.03) 100%);
-  border: 1px solid rgba(34,197,94,0.14);
+  background: rgba(34,197,94,0.07);
+  border: 1px solid rgba(34,197,94,0.18);
 }
 .day-available:hover {
-  background: radial-gradient(circle at top left, rgba(34,197,94,0.2) 0%, rgba(34,197,94,0.06) 100%);
-  border-color: rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.15);
+  border-color: rgba(34,197,94,0.4);
 }
 .day-booked-internal {
-  background: radial-gradient(circle at top left, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0.06) 100%);
-  border: 1px solid rgba(59,130,246,0.35);
+  background: linear-gradient(135deg, rgba(59,130,246,0.4) 0%, rgba(37,99,235,0.25) 100%);
+  border: 1px solid rgba(59,130,246,0.6);
 }
 .day-booked-airbnb {
-  background: radial-gradient(circle at top left, rgba(249,115,22,0.18) 0%, rgba(249,115,22,0.06) 100%);
-  border: 1px solid rgba(249,115,22,0.35);
+  background: linear-gradient(135deg, rgba(249,115,22,0.4) 0%, rgba(234,88,12,0.25) 100%);
+  border: 1px solid rgba(249,115,22,0.6);
 }
 .day-selected {
-  background: radial-gradient(circle at top left, rgba(99,102,241,0.3) 0%, rgba(99,102,241,0.1) 100%);
-  border: 1px solid rgba(99,102,241,0.55);
+  background: linear-gradient(135deg, rgba(99,102,241,0.45) 0%, rgba(79,70,229,0.25) 100%);
+  border: 1px solid rgba(99,102,241,0.7);
 }
 .day-past {
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.04);
 }
 .day-today {
-  background: radial-gradient(circle at top left, rgba(34,197,94,0.18) 0%, rgba(34,197,94,0.05) 100%);
-  border: 1px solid rgba(34,197,94,0.45);
+  background: rgba(34,197,94,0.15);
+  border: 2px solid rgba(34,197,94,0.6);
 }
 
 /* Dark card base */
