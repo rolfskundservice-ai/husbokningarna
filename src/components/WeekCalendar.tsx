@@ -317,7 +317,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                               {isDeparture && !isArrival && (
                                 <span
                                   className="absolute top-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
-                                  style={{ background: "rgba(255,255,255,0.12)", color: "#9ca3af" }}
+                                  style={{ background: "#dc2626", color: "#fff", opacity: 0.9 }}
                                 >
                                   UT
                                 </span>
