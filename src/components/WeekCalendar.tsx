@@ -177,9 +177,24 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
       return;
     }
 
-    // Utcheckningsdag utan aktiv bokning — klick visar checkout-info eller startar ny bokning
-    if (isCheckoutOnly && !selectStart) {
-      if (checkoutBooking) setViewBooking(checkoutBooking);
+    // Utcheckningsdag — tillåt incheckning samma dag
+    if (isCheckoutOnly) {
+      if (!selectStart) {
+        setSelectStart(day);
+      } else {
+        const [start, end] = day >= selectStart ? [selectStart, day] : [day, selectStart];
+        const hasConflict = bookings.some((b) => {
+          const bs = parseLocalDate(b.startDate);
+          const be = parseLocalDate(b.endDate);
+          return bs < addDays(end, 1) && be > start;
+        });
+        if (hasConflict) {
+          alert("Det finns bokade dagar i det valda intervallet. Välj ett annat datum.");
+          setSelectStart(null); setHoverDay(null); return;
+        }
+        setPendingRange({ start, end });
+        setSelectStart(null); setHoverDay(null);
+      }
       return;
     }
 
@@ -335,10 +350,10 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                                 padding: "8px 7px",
                                 opacity: status === "past" ? 0.35 : 1,
                                 borderLeft: isArrival ? `3px solid ${arrivalColor}` : undefined,
-                                // Halvdags-gradient för utcheckningsdagar
+                                // Vertikal halvdags-split: vänster = checkout-färg, höger = ledig
                                 ...(isCheckoutOnly && {
-                                  background: `linear-gradient(to bottom, rgba(34,197,94,0.07) 50%, ${coColor === "#f97316" ? "rgba(249,115,22,0.25)" : "rgba(59,130,246,0.22)"} 50%)`,
-                                  border: `1px solid rgba(34,197,94,0.18)`,
+                                  background: `linear-gradient(to right, ${coColor === "#f97316" ? "rgba(249,115,22,0.25)" : "rgba(59,130,246,0.22)"} 50%, rgba(34,197,94,0.07) 50%)`,
+                                  border: `1px solid rgba(255,255,255,0.08)`,
                                 }),
                               }}
                               onClick={() => isClickable && handleDayClick(day, status, booking, isCheckoutOnly, checkoutBooking)}
