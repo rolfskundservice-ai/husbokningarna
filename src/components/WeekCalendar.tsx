@@ -567,7 +567,7 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
         <div>
           <h2 className="text-lg font-bold text-white">Ny bokning</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            {nights} natt{nights !== 1 ? "er" : ""}
+            {nights} {nights !== 1 ? "nätter" : "natt"}
           </p>
         </div>
         <CloseBtn onClick={onClose} />
@@ -679,7 +679,7 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
       <div className="space-y-3">
         <DetailRow label="Incheckning" value={fmt(start)} />
         <DetailRow label="Utcheckning" value={fmt(lastDay)} />
-        <DetailRow label="Nätter" value={`${nights} natt${nights !== 1 ? "er" : ""}`} />
+        <DetailRow label="Nätter" value={`${nights} ${nights !== 1 ? "nätter" : "natt"}`} />
         {booking.numberOfPersons != null && (
           <DetailRow label="Antal personer" value={`${booking.numberOfPersons} person${booking.numberOfPersons !== 1 ? "er" : ""}`} />
         )}
