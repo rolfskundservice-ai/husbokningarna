@@ -12,6 +12,8 @@ export interface Booking {
   notes: string | null;
   numberOfPersons: number | null;
   numberOfBoats: number | null;
+  cleaning: boolean;
+  bedLinen: boolean;
   source: "INTERNAL" | "AIRBNB" | "MANUAL";
 }
 
@@ -428,33 +430,38 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
   start: Date; end: Date; propertyId: string;
   onClose: () => void; onBooked: () => void;
 }) {
+  // startStr = incheckning, endStr = utcheckning (exclusive, dag efter sista natten)
   const [startStr, setStartStr] = useState(dateKey(start));
-  const [endStr, setEndStr] = useState(dateKey(end));
+  const [endStr, setEndStr] = useState(dateKey(addDays(end, 1)));
   const [guestName, setGuestName] = useState("");
   const [persons, setPersons] = useState(1);
-  const [boats, setBoats] = useState(1);
+  const [boats, setBoats] = useState(0);
   const [notes, setNotes] = useState("");
+  const [cleaning, setCleaning] = useState(false);
+  const [bedLinen, setBedLinen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const nights = Math.max(0, Math.round(
     (new Date(endStr).getTime() - new Date(startStr).getTime()) / 86400000
-  )) + 1;
+  ));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true); setError(null);
-    const endExclusive = addDays(new Date(endStr), 1);
+    // endStr is already the exclusive checkout date
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         propertyId, startDate: startStr,
-        endDate: dateKey(endExclusive),
+        endDate: endStr,
         guestName: guestName || undefined,
         notes: notes || undefined,
         numberOfPersons: persons,
         numberOfBoats: boats,
+        cleaning,
+        bedLinen,
       }),
     });
     setLoading(false);
@@ -483,8 +490,8 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
               onChange={(e) => setStartStr(e.target.value)} className="input-dark w-full" />
           </div>
           <div>
-            <label className="field-label">Sista natten</label>
-            <input type="date" required value={endStr} min={startStr}
+            <label className="field-label">Utcheckning</label>
+            <input type="date" required value={endStr} min={addDays(new Date(startStr), 1).toISOString().slice(0,10)}
               onChange={(e) => setEndStr(e.target.value)} className="input-dark w-full" />
           </div>
         </div>
@@ -506,6 +513,18 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
             <label className="field-label">Antal båtar att hyra</label>
             <Stepper value={boats} min={0} max={20} onChange={setBoats} />
           </div>
+        </div>
+
+        {/* Städning + Lakan */}
+        <div className="flex gap-4">
+          <CheckOption
+            id="cleaning" checked={cleaning} onChange={setCleaning}
+            label="Städning" emoji="🧹"
+          />
+          <CheckOption
+            id="bedlinen" checked={bedLinen} onChange={setBedLinen}
+            label="Lakan" emoji="🛏"
+          />
         </div>
 
         {/* Notes */}
@@ -574,6 +593,12 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
         )}
         {booking.numberOfBoats != null && (
           <DetailRow label="Båtar" value={`${booking.numberOfBoats} båt${booking.numberOfBoats !== 1 ? "ar" : ""}`} />
+        )}
+        {(booking.cleaning || booking.bedLinen) && (
+          <DetailRow
+            label="Övrigt"
+            value={[booking.cleaning && "Städning", booking.bedLinen && "Lakan"].filter(Boolean).join(", ")}
+          />
         )}
         {booking.notes && <DetailRow label="Anteckning" value={booking.notes} />}
         {booking.userName && booking.source !== "AIRBNB" && (
@@ -664,6 +689,41 @@ function Stepper({ value, min, max, onChange }: {
 
 function Opt() {
   return <span className="text-gray-600 font-normal">(valfritt)</span>;
+}
+
+function CheckOption({ id, checked, onChange, label, emoji }: {
+  id: string; checked: boolean; onChange: (v: boolean) => void; label: string; emoji: string;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className="flex flex-1 cursor-pointer items-center gap-3 rounded-xl px-4 py-3 transition-all select-none"
+      style={{
+        background: checked ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.04)",
+        border: checked ? "1px solid rgba(99,102,241,0.5)" : "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <input
+        id={id} type="checkbox" checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="hidden"
+      />
+      <span className="text-xl leading-none">{emoji}</span>
+      <span className="text-sm font-medium" style={{ color: checked ? "#a5b4fc" : "#6b7280" }}>
+        {label}
+      </span>
+      <span
+        className="ml-auto h-4 w-4 rounded flex items-center justify-center text-[10px] font-bold"
+        style={{
+          background: checked ? "#6366f1" : "rgba(255,255,255,0.06)",
+          border: checked ? "none" : "1px solid rgba(255,255,255,0.1)",
+          color: "#fff",
+        }}
+      >
+        {checked ? "✓" : ""}
+      </span>
+    </label>
+  );
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {

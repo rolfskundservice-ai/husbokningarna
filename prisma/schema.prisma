@@ -89,6 +89,8 @@ model Booking {
   notes           String?
   numberOfPersons Int?
   numberOfBoats   Int?
+  cleaning        Boolean  @default(false)
+  bedLinen        Boolean  @default(false)
   source      BookingSource @default(INTERNAL)
   status      BookingStatus @default(CONFIRMED)
   externalId  String?       // Airbnb UID från iCal, för att matcha vid sync

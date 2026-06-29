@@ -19,6 +19,8 @@ interface Booking {
   notes: string | null;
   numberOfPersons: number | null;
   numberOfBoats: number | null;
+  cleaning: boolean;
+  bedLinen: boolean;
   source: "INTERNAL" | "AIRBNB" | "MANUAL";
 }
 
@@ -299,10 +301,14 @@ export function OverviewCalendar({ properties }: { properties: Property[] }) {
                             </td>
                             <td
                               key={`${p.id}-ovrigt`}
-                              className="px-2 max-w-[140px]"
+                              className="px-2 max-w-[160px]"
                               style={{ ...cellStyle, whiteSpace: "normal" }}
                             >
-                              {!isContinuation ? booking.notes ?? "" : ""}
+                              {!isContinuation ? [
+                                booking.cleaning && "Städning",
+                                booking.bedLinen && "Lakan",
+                                booking.notes,
+                              ].filter(Boolean).join(", ") : ""}
                             </td>
                             <td key={`${p.id}-bokare`} className="px-2 whitespace-nowrap" style={cellStyle}>
                               {!isContinuation

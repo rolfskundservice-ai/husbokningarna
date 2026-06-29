@@ -46,6 +46,8 @@ export async function GET(req: Request) {
       notes: b.notes,
       numberOfPersons: b.numberOfPersons,
       numberOfBoats: b.numberOfBoats,
+      cleaning: b.cleaning,
+      bedLinen: b.bedLinen,
       source: b.source,
       status: b.status,
     }))
@@ -60,6 +62,8 @@ const createBookingSchema = z.object({
   notes: z.string().optional(),
   numberOfPersons: z.number().int().min(1).optional(),
   numberOfBoats: z.number().int().min(0).optional(),
+  cleaning: z.boolean().optional(),
+  bedLinen: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {
@@ -72,7 +76,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { propertyId, startDate, endDate, guestName, notes, numberOfPersons, numberOfBoats } = parsed.data;
+  const { propertyId, startDate, endDate, guestName, notes, numberOfPersons, numberOfBoats, cleaning, bedLinen } = parsed.data;
 
   if (session.user.role === "PARTNER") {
     const access = await prisma.propertyAccess.findUnique({
@@ -114,6 +118,8 @@ export async function POST(req: Request) {
       notes: notes || null,
       numberOfPersons: numberOfPersons ?? null,
       numberOfBoats: numberOfBoats ?? null,
+      cleaning: cleaning ?? false,
+      bedLinen: bedLinen ?? false,
       source: BookingSource.INTERNAL,
       status: BookingStatus.CONFIRMED,
     },
