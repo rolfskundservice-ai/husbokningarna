@@ -332,6 +332,8 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                         const isBooked = status === "booked_internal" || status === "booked_airbnb";
                         const arrivalColor = status === "booked_airbnb" ? "#f97316" : "#3b82f6";
                         const coColor = checkoutBooking?.source === "AIRBNB" ? "#f97316" : "#3b82f6";
+                        // Visa split när det är en UT-dag (ensam eller tillsammans med ny incheckning)
+                        const showSplit = isCheckoutOnly || (isArrival && checkoutBooking !== null);
 
                         return (
                           <td
@@ -343,39 +345,40 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                             }}
                           >
                             <div
-                              className={`${isCheckoutOnly ? "day-available" : cssClass} rounded-lg transition-all relative overflow-hidden`}
+                              className={`${showSplit ? "" : cssClass} rounded-lg transition-all relative overflow-hidden`}
                               style={{
                                 cursor: isClickable ? "pointer" : "default",
                                 minHeight: 76,
                                 padding: "8px 7px",
                                 opacity: status === "past" ? 0.35 : 1,
-                                borderLeft: isArrival ? `3px solid ${arrivalColor}` : undefined,
-                                // Vertikal halvdags-split: vänster = checkout-färg, höger = ledig
-                                ...(isCheckoutOnly && {
-                                  background: `linear-gradient(to right, ${coColor === "#f97316" ? "rgba(249,115,22,0.25)" : "rgba(59,130,246,0.22)"} 50%, rgba(34,197,94,0.07) 50%)`,
+                                // Vertikal split: vänster = UT-färg, höger = IN-färg eller ledig
+                                ...(showSplit && {
+                                  background: `linear-gradient(to right, ${coColor === "#f97316" ? "rgba(249,115,22,0.28)" : "rgba(59,130,246,0.25)"} 50%, ${isArrival ? (arrivalColor === "#f97316" ? "rgba(249,115,22,0.28)" : "rgba(59,130,246,0.25)") : "rgba(34,197,94,0.07)"} 50%)`,
                                   border: `1px solid rgba(255,255,255,0.08)`,
+                                  borderLeft: isArrival ? `3px solid ${arrivalColor}` : undefined,
                                 }),
+                                ...(!showSplit && isArrival && { borderLeft: `3px solid ${arrivalColor}` }),
                               }}
                               onClick={() => isClickable && handleDayClick(day, status, booking, isCheckoutOnly, checkoutBooking)}
                               onMouseEnter={() => selectStart && isClickable && setHoverDay(day)}
                               onMouseLeave={() => selectStart && setHoverDay(null)}
                             >
-                              {/* IN badge */}
+                              {/* UT badge — vänster vid split, annars höger */}
+                              {(isDeparture || (isArrival && checkoutBooking)) && (
+                                <span
+                                  className={`absolute top-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none ${showSplit && isArrival ? "left-1" : "right-1"}`}
+                                  style={{ background: "#dc2626", color: "#fff", opacity: 0.9 }}
+                                >
+                                  UT
+                                </span>
+                              )}
+                              {/* IN badge — höger alltid */}
                               {isArrival && (
                                 <span
                                   className="absolute top-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
                                   style={{ background: arrivalColor, color: "#fff", opacity: 0.9 }}
                                 >
                                   IN
-                                </span>
-                              )}
-                              {/* UT badge — visas på faktisk utcheckningsdag */}
-                              {isDeparture && (
-                                <span
-                                  className="absolute bottom-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
-                                  style={{ background: "#dc2626", color: "#fff", opacity: 0.9 }}
-                                >
-                                  UT
                                 </span>
                               )}
 
