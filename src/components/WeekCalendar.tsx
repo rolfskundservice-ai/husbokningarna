@@ -70,34 +70,57 @@ function generateWeeks(from: Date, count: number): WeekRow[] {
 interface DayInfo {
   status: DayStatus;
   booking: Booking | null;
-  isArrival: boolean;    // first day of a booking
-  isDeparture: boolean;  // last day (endDate - 1) of a booking
+  isArrival: boolean;
+  isDeparture: boolean;
+  isCheckoutOnly: boolean; // utcheckningsdag — halvdag, ny bokning tillåten
+  checkoutBooking: Booking | null; // bokningens checkout (kan skilja sig från booking vid dubbel-dag)
 }
 
 function getDayStatus(date: Date, bookings: Booking[]): DayInfo {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const isPast = date < today;
   const isToday = date.getTime() === today.getTime();
+  const dk = dateKey(date);
+
+  // Hitta bokning som är aktiv denna dag (ej utcheckningsdagen)
+  let activeBooking: Booking | null = null;
+  let checkoutBooking: Booking | null = null;
 
   for (const b of bookings) {
     const start = parseLocalDate(b.startDate);
     const end = parseLocalDate(b.endDate);
-    if (date >= start && date < end) {
-      const status = isToday
-        ? (b.source === "AIRBNB" ? "booked_airbnb" : "booked_internal")
-        : (b.source === "AIRBNB" ? "booked_airbnb" : "booked_internal");
-      return {
-        status,
-        booking: b,
-        isArrival: dateKey(date) === dateKey(start),
-        isDeparture: dateKey(addDays(date, 1)) === dateKey(end),
-      };
-    }
+    if (date >= start && date < end) activeBooking = b;
+    if (dk === dateKey(end)) checkoutBooking = b;
   }
 
-  if (isPast) return { status: "past", booking: null, isArrival: false, isDeparture: false };
-  if (isToday) return { status: "today", booking: null, isArrival: false, isDeparture: false };
-  return { status: "available", booking: null, isArrival: false, isDeparture: false };
+  if (activeBooking) {
+    const start = parseLocalDate(activeBooking.startDate);
+    const status = activeBooking.source === "AIRBNB" ? "booked_airbnb" : "booked_internal";
+    return {
+      status,
+      booking: activeBooking,
+      isArrival: dk === dateKey(start),
+      isDeparture: false,
+      isCheckoutOnly: false,
+      checkoutBooking,
+    };
+  }
+
+  if (checkoutBooking) {
+    const status = checkoutBooking.source === "AIRBNB" ? "booked_airbnb" : "booked_internal";
+    return {
+      status,
+      booking: null,
+      isArrival: false,
+      isDeparture: true,
+      isCheckoutOnly: true,
+      checkoutBooking,
+    };
+  }
+
+  if (isPast) return { status: "past", booking: null, isArrival: false, isDeparture: false, isCheckoutOnly: false, checkoutBooking: null };
+  if (isToday) return { status: "today", booking: null, isArrival: false, isDeparture: false, isCheckoutOnly: false, checkoutBooking: null };
+  return { status: "available", booking: null, isArrival: false, isDeparture: false, isCheckoutOnly: false, checkoutBooking: null };
 }
 
 function dayCssClass(status: DayStatus, inRange: boolean, isStart: boolean): string {
@@ -146,11 +169,17 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  function handleDayClick(day: Date, status: DayStatus, booking: Booking | null, _isArrival?: boolean) {
+  function handleDayClick(day: Date, status: DayStatus, booking: Booking | null, isCheckoutOnly?: boolean, checkoutBooking?: Booking | null) {
     if (status === "past") return;
 
-    if (status === "booked_internal" || status === "booked_airbnb") {
+    if ((status === "booked_internal" || status === "booked_airbnb") && !isCheckoutOnly) {
       setViewBooking(booking);
+      return;
+    }
+
+    // Utcheckningsdag utan aktiv bokning — klick visar checkout-info eller startar ny bokning
+    if (isCheckoutOnly && !selectStart) {
+      if (checkoutBooking) setViewBooking(checkoutBooking);
       return;
     }
 
@@ -278,7 +307,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                         {week.weekNumber}
                       </td>
                       {week.days.map((day) => {
-                        const { status, booking, isArrival, isDeparture } = getDayStatus(day, bookings);
+                        const { status, booking, isArrival, isDeparture, isCheckoutOnly, checkoutBooking } = getDayStatus(day, bookings);
                         const inRange = isInRange(day);
                         const isStart = selectStart != null && dateKey(day) === dateKey(selectStart);
                         const cssClass = dayCssClass(status, inRange, isStart);
@@ -287,6 +316,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                         const isClickable = status !== "past";
                         const isBooked = status === "booked_internal" || status === "booked_airbnb";
                         const arrivalColor = status === "booked_airbnb" ? "#f97316" : "#3b82f6";
+                        const coColor = checkoutBooking?.source === "AIRBNB" ? "#f97316" : "#3b82f6";
 
                         return (
                           <td
@@ -298,22 +328,24 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                             }}
                           >
                             <div
-                              className={`${cssClass} rounded-lg transition-all relative overflow-hidden`}
+                              className={`${isCheckoutOnly ? "day-available" : cssClass} rounded-lg transition-all relative overflow-hidden`}
                               style={{
                                 cursor: isClickable ? "pointer" : "default",
                                 minHeight: 76,
                                 padding: "8px 7px",
                                 opacity: status === "past" ? 0.35 : 1,
-                                // Extra left-border stripe on arrival days
-                                borderLeft: isArrival
-                                  ? `3px solid ${arrivalColor}`
-                                  : undefined,
+                                borderLeft: isArrival ? `3px solid ${arrivalColor}` : undefined,
+                                // Halvdags-gradient för utcheckningsdagar
+                                ...(isCheckoutOnly && {
+                                  background: `linear-gradient(to bottom, rgba(34,197,94,0.07) 50%, ${coColor === "#f97316" ? "rgba(249,115,22,0.25)" : "rgba(59,130,246,0.22)"} 50%)`,
+                                  border: `1px solid rgba(34,197,94,0.18)`,
+                                }),
                               }}
-                              onClick={() => isClickable && handleDayClick(day, status, booking)}
+                              onClick={() => isClickable && handleDayClick(day, status, booking, isCheckoutOnly, checkoutBooking)}
                               onMouseEnter={() => selectStart && isClickable && setHoverDay(day)}
                               onMouseLeave={() => selectStart && setHoverDay(null)}
                             >
-                              {/* Arrival / departure badges */}
+                              {/* IN badge */}
                               {isArrival && (
                                 <span
                                   className="absolute top-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
@@ -322,9 +354,10 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                                   IN
                                 </span>
                               )}
-                              {isDeparture && !isArrival && (
+                              {/* UT badge — visas på faktisk utcheckningsdag */}
+                              {isDeparture && (
                                 <span
-                                  className="absolute top-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
+                                  className="absolute bottom-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
                                   style={{ background: "#dc2626", color: "#fff", opacity: 0.9 }}
                                 >
                                   UT
@@ -333,7 +366,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
 
                               {/* Date number */}
                               <div className="flex items-start justify-between">
-                                <span className="text-sm font-bold leading-none" style={{ color: textColor }}>
+                                <span className="text-sm font-bold leading-none" style={{ color: isCheckoutOnly ? "#9ca3af" : textColor }}>
                                   {day.getDate()}
                                 </span>
                                 {isWeekend && !isArrival && !isDeparture && (
@@ -350,7 +383,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                                 </div>
                               )}
 
-                              {/* Booking info — only on arrival day to avoid repetition */}
+                              {/* Booking info — only on arrival day */}
                               {isBooked && booking && isArrival && (
                                 <div className="mt-2 space-y-0.5">
                                   {(booking.guestName || booking.userName) && (
