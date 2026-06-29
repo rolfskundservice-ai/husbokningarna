@@ -384,25 +384,26 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                                     >IN</span>
                                   )}
                                 </div>
-                                {/* Datum och gästinfo ovanpå */}
-                                <div className="relative z-10 p-2">
-                                  <span className="text-sm font-bold leading-none" style={{ color: "#9ca3af" }}>
+                                {/* Datum — vänster halva */}
+                                <div className="absolute top-0 left-0 z-10 p-2" style={{ width: "50%" }}>
+                                  <span className="text-sm font-bold leading-none" style={{ color: "#f87171" }}>
                                     {day.getDate()}
                                   </span>
-                                  {isArrival && booking && (
-                                    <div className="mt-1 space-y-0.5">
-                                      {(booking.guestName || booking.userName) && (
-                                        <div className="text-[10px] font-semibold leading-tight truncate" style={{ color: "#bfdbfe", maxWidth: 68 }}>
-                                          {booking.guestName || booking.userName}
-                                        </div>
-                                      )}
-                                      <div className="flex items-center gap-1 text-[9px]" style={{ color: "#bfdbfe", opacity: 0.75 }}>
-                                        {booking.numberOfPersons && <span>👤{booking.numberOfPersons}</span>}
-                                        {(booking.numberOfBoats ?? 0) > 0 && <span>🚤{booking.numberOfBoats}</span>}
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
+                                {/* Gästinfo — höger halva */}
+                                {isArrival && booking && (
+                                  <div className="absolute top-0 right-0 z-10 p-2 space-y-0.5" style={{ width: "50%" }}>
+                                    {(booking.guestName || booking.userName) && (
+                                      <div className="text-[10px] font-semibold leading-tight truncate" style={{ color: "#bfdbfe" }}>
+                                        {booking.guestName || booking.userName}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-1 text-[9px]" style={{ color: "#bfdbfe", opacity: 0.75 }}>
+                                      {booking.numberOfPersons && <span>👤{booking.numberOfPersons}</span>}
+                                      {(booking.numberOfBoats ?? 0) > 0 && <span>🚤{booking.numberOfBoats}</span>}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               /* ── Vanlig cell ── */
