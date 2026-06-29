@@ -41,6 +41,12 @@ function dateKey(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+// Parse ISO date string as local midnight (avoids UTC-offset shifting dates)
+function parseLocalDate(isoStr: string): Date {
+  const [y, m, d] = isoStr.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function addDays(d: Date, n: number): Date {
   const r = new Date(d);
   r.setDate(r.getDate() + n);
@@ -74,8 +80,8 @@ function getDayStatus(date: Date, bookings: Booking[]): DayInfo {
   const isToday = date.getTime() === today.getTime();
 
   for (const b of bookings) {
-    const start = new Date(b.startDate);
-    const end = new Date(b.endDate);
+    const start = parseLocalDate(b.startDate);
+    const end = parseLocalDate(b.endDate);
     if (date >= start && date < end) {
       const status = isToday
         ? (b.source === "AIRBNB" ? "booked_airbnb" : "booked_internal")
@@ -155,8 +161,8 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
 
     const [start, end] = day >= selectStart ? [selectStart, day] : [day, selectStart];
     const hasConflict = bookings.some((b) => {
-      const bs = new Date(b.startDate);
-      const be = new Date(b.endDate);
+      const bs = parseLocalDate(b.startDate);
+      const be = parseLocalDate(b.endDate);
       return bs < addDays(end, 1) && be > start;
     });
     if (hasConflict) {

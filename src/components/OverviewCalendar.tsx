@@ -55,15 +55,18 @@ function generateWeeks(from: Date, count: number): Week[] {
   });
 }
 
-function fmtDate(isoStr: string): string {
-  const d = new Date(isoStr);
+function parseLocalDate(isoStr: string): Date {
+  const [y, m, d] = isoStr.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function fmtDate(d: Date): string {
   return `${d.getDate()}/${d.getMonth() + 1}`;
 }
 
 function formatRange(startStr: string, endStr: string): string {
-  // endDate is exclusive → last night is end - 1
-  const lastDay = addDays(new Date(endStr), -1);
-  return `${fmtDate(startStr)}–${fmtDate(lastDay.toISOString())}`;
+  const lastDay = addDays(parseLocalDate(endStr), -1);
+  return `${fmtDate(parseLocalDate(startStr))}–${fmtDate(lastDay)}`;
 }
 
 type WeekState =
@@ -74,8 +77,8 @@ type WeekState =
 function getWeekState(propertyId: string, week: Week, bookings: Booking[]): WeekState {
   for (const b of bookings) {
     if (b.propertyId !== propertyId) continue;
-    const start = new Date(b.startDate);
-    const end = new Date(b.endDate);
+    const start = parseLocalDate(b.startDate);
+    const end = parseLocalDate(b.endDate);
 
     if (start >= week.start && start < week.end) return { type: "start", booking: b };
     if (start < week.start && end > week.start) return { type: "continues", booking: b };
