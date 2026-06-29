@@ -344,86 +344,120 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                               background: isWeekend ? "rgba(99,102,241,0.03)" : "transparent",
                             }}
                           >
-                            <div
-                              className={`${showSplit ? "" : cssClass} rounded-lg transition-all relative overflow-hidden`}
-                              style={{
-                                cursor: isClickable ? "pointer" : "default",
-                                minHeight: 76,
-                                padding: "8px 7px",
-                                opacity: status === "past" ? 0.35 : 1,
-                                // Vertikal split: vänster = UT-färg, höger = IN-färg eller ledig
-                                ...(showSplit && {
-                                  background: `linear-gradient(to right, ${coColor === "#f97316" ? "rgba(249,115,22,0.28)" : "rgba(59,130,246,0.25)"} 50%, ${isArrival ? (arrivalColor === "#f97316" ? "rgba(249,115,22,0.28)" : "rgba(59,130,246,0.25)") : "rgba(34,197,94,0.07)"} 50%)`,
-                                  border: `1px solid rgba(255,255,255,0.08)`,
-                                  borderLeft: isArrival ? `3px solid ${arrivalColor}` : undefined,
-                                }),
-                                ...(!showSplit && isArrival && { borderLeft: `3px solid ${arrivalColor}` }),
-                              }}
-                              onClick={() => isClickable && handleDayClick(day, status, booking, isCheckoutOnly, checkoutBooking)}
-                              onMouseEnter={() => selectStart && isClickable && setHoverDay(day)}
-                              onMouseLeave={() => selectStart && setHoverDay(null)}
-                            >
-                              {/* UT badge — vänster vid split, annars höger */}
-                              {(isDeparture || (isArrival && checkoutBooking)) && (
-                                <span
-                                  className={`absolute top-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none ${showSplit && isArrival ? "left-1" : "right-1"}`}
-                                  style={{ background: "#dc2626", color: "#fff", opacity: 0.9 }}
+                            {showSplit ? (
+                              /* ── Delad cell: UT vänster / IN höger ── */
+                              <div
+                                className="rounded-lg overflow-hidden relative"
+                                style={{ minHeight: 76, cursor: "pointer", border: "1px solid rgba(255,255,255,0.1)" }}
+                                onClick={() => isClickable && handleDayClick(day, status, booking, isCheckoutOnly, checkoutBooking)}
+                                onMouseEnter={() => selectStart && setHoverDay(day)}
+                                onMouseLeave={() => selectStart && setHoverDay(null)}
+                              >
+                                {/* Vänster halva — utcheckning */}
+                                <div
+                                  className="absolute inset-y-0 left-0"
+                                  style={{
+                                    width: "50%",
+                                    background: coColor === "#f97316" ? "rgba(249,115,22,0.28)" : "rgba(59,130,246,0.28)",
+                                    borderRight: "1px solid rgba(255,255,255,0.15)",
+                                  }}
                                 >
-                                  UT
-                                </span>
-                              )}
-                              {/* IN badge — höger alltid */}
-                              {isArrival && (
-                                <span
-                                  className="absolute top-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
-                                  style={{ background: arrivalColor, color: "#fff", opacity: 0.9 }}
+                                  <span
+                                    className="absolute top-1 left-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
+                                    style={{ background: "#dc2626", color: "#fff" }}
+                                  >UT</span>
+                                </div>
+                                {/* Höger halva — incheckning eller ledig */}
+                                <div
+                                  className="absolute inset-y-0 right-0"
+                                  style={{
+                                    width: "50%",
+                                    background: isArrival
+                                      ? (arrivalColor === "#f97316" ? "rgba(249,115,22,0.28)" : "rgba(59,130,246,0.28)")
+                                      : "rgba(34,197,94,0.07)",
+                                  }}
                                 >
-                                  IN
-                                </span>
-                              )}
-
-                              {/* Date number */}
-                              <div className="flex items-start justify-between">
-                                <span className="text-sm font-bold leading-none" style={{ color: isCheckoutOnly ? "#9ca3af" : textColor }}>
-                                  {day.getDate()}
-                                </span>
-                                {isWeekend && !isArrival && !isDeparture && (
-                                  <span className="text-[9px] font-semibold leading-none" style={{ color: "rgba(129,140,248,0.6)" }}>
-                                    {day.getDay() === 6 ? "Lör" : "Sön"}
+                                  {isArrival && (
+                                    <span
+                                      className="absolute top-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
+                                      style={{ background: arrivalColor, color: "#fff" }}
+                                    >IN</span>
+                                  )}
+                                </div>
+                                {/* Datum och gästinfo ovanpå */}
+                                <div className="relative z-10 p-2">
+                                  <span className="text-sm font-bold leading-none" style={{ color: "#9ca3af" }}>
+                                    {day.getDate()}
                                   </span>
+                                  {isArrival && booking && (
+                                    <div className="mt-1 space-y-0.5">
+                                      {(booking.guestName || booking.userName) && (
+                                        <div className="text-[10px] font-semibold leading-tight truncate" style={{ color: "#bfdbfe", maxWidth: 68 }}>
+                                          {booking.guestName || booking.userName}
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-1 text-[9px]" style={{ color: "#bfdbfe", opacity: 0.75 }}>
+                                        {booking.numberOfPersons && <span>👤{booking.numberOfPersons}</span>}
+                                        {(booking.numberOfBoats ?? 0) > 0 && <span>🚤{booking.numberOfBoats}</span>}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              /* ── Vanlig cell ── */
+                              <div
+                                className={`${cssClass} rounded-lg transition-all relative overflow-hidden`}
+                                style={{
+                                  cursor: isClickable ? "pointer" : "default",
+                                  minHeight: 76,
+                                  padding: "8px 7px",
+                                  opacity: status === "past" ? 0.35 : 1,
+                                  borderLeft: isArrival ? `3px solid ${arrivalColor}` : undefined,
+                                }}
+                                onClick={() => isClickable && handleDayClick(day, status, booking, isCheckoutOnly, checkoutBooking)}
+                                onMouseEnter={() => selectStart && isClickable && setHoverDay(day)}
+                                onMouseLeave={() => selectStart && setHoverDay(null)}
+                              >
+                                {isArrival && (
+                                  <span className="absolute top-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
+                                    style={{ background: arrivalColor, color: "#fff", opacity: 0.9 }}>IN</span>
+                                )}
+                                {isDeparture && (
+                                  <span className="absolute bottom-1 right-1 rounded text-[8px] font-bold px-1 py-0.5 leading-none"
+                                    style={{ background: "#dc2626", color: "#fff", opacity: 0.9 }}>UT</span>
+                                )}
+                                <div className="flex items-start justify-between">
+                                  <span className="text-sm font-bold leading-none" style={{ color: textColor }}>{day.getDate()}</span>
+                                  {isWeekend && !isArrival && !isDeparture && (
+                                    <span className="text-[9px] font-semibold leading-none" style={{ color: "rgba(129,140,248,0.6)" }}>
+                                      {day.getDay() === 6 ? "Lör" : "Sön"}
+                                    </span>
+                                  )}
+                                </div>
+                                {day.getDate() === 1 && (
+                                  <div className="text-[10px] mt-0.5 font-medium" style={{ color: textColor, opacity: 0.6 }}>
+                                    {MONTHS_SHORT[day.getMonth()]}
+                                  </div>
+                                )}
+                                {isBooked && booking && isArrival && (
+                                  <div className="mt-2 space-y-0.5">
+                                    {(booking.guestName || booking.userName) && (
+                                      <div className="text-[11px] font-semibold leading-tight truncate" style={{ color: textColor, maxWidth: 72 }}>
+                                        {booking.guestName || booking.userName}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-1 text-[10px]" style={{ color: textColor, opacity: 0.75 }}>
+                                      {booking.numberOfPersons && <span>👤{booking.numberOfPersons}</span>}
+                                      {(booking.numberOfBoats ?? 0) > 0 && <span>🚤{booking.numberOfBoats}</span>}
+                                    </div>
+                                    {status === "booked_airbnb" && (
+                                      <div className="text-[9px] font-bold uppercase tracking-wide" style={{ color: textColor, opacity: 0.6 }}>Airbnb</div>
+                                    )}
+                                  </div>
                                 )}
                               </div>
-
-                              {/* Month label on 1st of month */}
-                              {day.getDate() === 1 && (
-                                <div className="text-[10px] mt-0.5 font-medium" style={{ color: textColor, opacity: 0.6 }}>
-                                  {MONTHS_SHORT[day.getMonth()]}
-                                </div>
-                              )}
-
-                              {/* Booking info — only on arrival day */}
-                              {isBooked && booking && isArrival && (
-                                <div className="mt-2 space-y-0.5">
-                                  {(booking.guestName || booking.userName) && (
-                                    <div
-                                      className="text-[11px] font-semibold leading-tight truncate"
-                                      style={{ color: textColor, maxWidth: 72 }}
-                                    >
-                                      {booking.guestName || booking.userName}
-                                    </div>
-                                  )}
-                                  <div className="flex items-center gap-1 text-[10px]" style={{ color: textColor, opacity: 0.75 }}>
-                                    {booking.numberOfPersons && <span>👤{booking.numberOfPersons}</span>}
-                                    {(booking.numberOfBoats ?? 0) > 0 && <span>🚤{booking.numberOfBoats}</span>}
-                                  </div>
-                                  {status === "booked_airbnb" && (
-                                    <div className="text-[9px] font-bold uppercase tracking-wide" style={{ color: textColor, opacity: 0.6 }}>
-                                      Airbnb
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                            )}
                           </td>
                         );
                       })}
