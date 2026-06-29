@@ -432,7 +432,7 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
 }) {
   // startStr = incheckning, endStr = utcheckning (exclusive, dag efter sista natten)
   const [startStr, setStartStr] = useState(dateKey(start));
-  const [endStr, setEndStr] = useState(dateKey(addDays(end, 1)));
+  const [endStr, setEndStr] = useState(dateKey(end));
   const [guestName, setGuestName] = useState("");
   const [persons, setPersons] = useState(1);
   const [boats, setBoats] = useState(0);
