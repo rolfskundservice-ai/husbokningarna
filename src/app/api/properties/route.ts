@@ -14,11 +14,11 @@ export async function GET() {
   if (session.user.role === "PARTNER") {
     properties = await prisma.property.findMany({
       where: { access: { some: { userId: session.user.id } } },
-      orderBy: { name: "asc" },
+      orderBy: { sortOrder: "asc" },
     });
   } else {
     // ADMIN och OWNER ser alla
-    properties = await prisma.property.findMany({ orderBy: { name: "asc" } });
+    properties = await prisma.property.findMany({ orderBy: { sortOrder: "asc" } });
   }
 
   return NextResponse.json(properties);

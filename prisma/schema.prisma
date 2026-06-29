@@ -58,6 +58,7 @@ model Property {
   description     String?
   color           String   @default("#2563eb") // för kalenderfärg
   airbnbIcalUrl   String?  // export-URL från Airbnb (per listing)
+  sortOrder       Int      @default(99)
   lastSyncedAt    DateTime?
   createdAt       DateTime @default(now())
 

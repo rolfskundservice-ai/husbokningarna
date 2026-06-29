@@ -13,9 +13,9 @@ export default async function OverviewPage() {
     session.user.role === "PARTNER"
       ? await prisma.property.findMany({
           where: { access: { some: { userId: session.user.id } } },
-          orderBy: { name: "asc" },
+          orderBy: { sortOrder: "asc" },
         })
-      : await prisma.property.findMany({ orderBy: { name: "asc" } });
+      : await prisma.property.findMany({ orderBy: { sortOrder: "asc" } });
 
   return (
     <div className="min-h-screen">

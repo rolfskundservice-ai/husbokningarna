@@ -10,7 +10,7 @@ export default async function AdminPropertiesPage() {
   if (!session) redirect("/login");
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
-  const properties = await prisma.property.findMany({ orderBy: { name: "asc" } });
+  const properties = await prisma.property.findMany({ orderBy: { sortOrder: "asc" } });
 
   return (
     <div className="min-h-screen">
