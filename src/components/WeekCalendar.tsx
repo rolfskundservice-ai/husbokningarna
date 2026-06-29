@@ -358,7 +358,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                                   className="absolute inset-y-0 left-0"
                                   style={{
                                     width: "50%",
-                                    background: coColor === "#f97316" ? "rgba(249,115,22,0.28)" : "rgba(59,130,246,0.28)",
+                                    background: "rgba(220,38,38,0.35)",
                                     borderRight: "1px solid rgba(255,255,255,0.15)",
                                   }}
                                 >
