@@ -20,31 +20,23 @@ function baseHtml(content: string) {
   return `<!DOCTYPE html><html lang="sv"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  body{margin:0;padding:0;background:#0a0d14;font-family:system-ui,sans-serif;color:#e2e8f0}
-  .wrap{max-width:560px;margin:32px auto;background:#0e1320;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.08)}
-  .header{background:linear-gradient(135deg,#1e3a5f,#1a1f3a);padding:28px 28px 22px;border-bottom:1px solid rgba(255,255,255,0.07)}
-  .logo{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#60a5fa;margin-bottom:8px}
-  .title{font-size:22px;font-weight:700;color:#fff;margin:0}
-  .body{padding:24px 28px}
-  .row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px;gap:12px}
-  .row .label{color:#94a3b8;flex-shrink:0}
-  .row .val{color:#e2e8f0;font-weight:500;text-align:right}
+  body{margin:0;padding:0;background:#0a0d14;font-family:system-ui,sans-serif}
+  .wrap{max-width:560px;margin:32px auto;border-radius:16px;overflow:hidden}
   .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-right:4px}
-  .badge-green{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3)}
-  .badge-blue{background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3)}
-  .btn{display:block;padding:14px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:600;text-align:center;box-sizing:border-box}
-  .note{margin-top:20px;padding:14px;background:rgba(255,255,255,0.03);border-radius:8px;border-left:3px solid #3b82f6;font-size:13px;color:#94a3b8;line-height:1.5}
-  .footer{padding:18px 28px;background:rgba(0,0,0,0.2);font-size:12px;color:#475569;text-align:center}
+  .badge-green{background:#14532d;color:#4ade80;border:1px solid #166534}
+  .badge-blue{background:#1e3a5f;color:#60a5fa;border:1px solid #1d4ed8}
   @media screen and (max-width:600px){
-    .wrap{margin:0!important;border-radius:0!important;border-left:none!important;border-right:none!important}
-    .header{padding:22px 18px 18px!important}
-    .body{padding:18px 16px!important}
-    .footer{padding:14px 16px!important}
-    .row{font-size:13px!important}
-    td.addon-td{display:block!important;width:100%!important;padding:0 0 8px 0!important}
-    a.addon-btn{display:block!important;width:100%!important}
+    .wrap{margin:0!important;border-radius:0!important}
+    .mob-pad{padding:18px 16px!important}
+    .mob-hide{display:none!important}
   }
-</style></head><body><div class="wrap">${content}</div></body></html>`;
+</style></head><body bgcolor="#0a0d14">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px" class="mob-pad">
+<table class="wrap" width="560" cellpadding="0" cellspacing="0" bgcolor="#0e1320" style="border:1px solid #1e293b;border-radius:16px">
+${content}
+</table>
+</td></tr></table>
+</body></html>`;
 }
 
 // ── 1. Bekräftelsemail till GÄST ─────────────────────────────────────────────
@@ -89,50 +81,61 @@ export async function sendGuestConfirmation(params: {
       `<tr><td class="addon-td" style="padding:0"><a class="addon-btn" href="${url("add-linen")}" style="${btnStyle("linear-gradient(135deg,#7c3aed,#a855f7)")}">🛏 Beställ lakan &nbsp;<span style="font-size:11px;font-weight:400;opacity:.8">220 kr</span></a></td></tr>`,
   ].filter(Boolean).join("\n");
 
-  const html = baseHtml(`
-    <div class="header">
-      <div class="logo">Bokningsbekräftelse</div>
-      <div class="title" style="font-size:32px;color:#ffffff;font-weight:800">Välkommen!</div>
-      <div style="margin-top:6px;font-size:15px;color:#93c5fd">${params.guestName} — ${params.propertyName}</div>
-    </div>
-    <div class="body">
-      <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6">
-        Vi ser fram emot ditt besök! Här är en sammanfattning av din bokning.
-      </p>
+  const tdLabel = `padding:12px 16px;font-size:13px;color:#94a3b8!important;border-bottom:1px solid #1e293b;width:42%`;
+  const tdVal   = `padding:12px 16px;font-size:14px;font-weight:600;border-bottom:1px solid #1e293b`;
 
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:12px;overflow:hidden;margin-bottom:20px;background:rgba(59,130,246,0.08)">
-        <tr><td style="padding:13px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,0.05);width:40%">📍 Stuga</td>
-            <td style="padding:13px 16px;font-size:14px;font-weight:600;color:#fff;border-bottom:1px solid rgba(255,255,255,0.05)">${params.propertyName}</td></tr>
-        <tr><td style="padding:13px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,0.05)">📅 Incheckning</td>
-            <td style="padding:13px 16px;font-size:14px;font-weight:600;color:#4ade80;border-bottom:1px solid rgba(255,255,255,0.05)">${fmt(params.startDate)}</td></tr>
-        <tr><td style="padding:13px 16px;font-size:13px;color:#94a3b8">📅 Utcheckning</td>
-            <td style="padding:13px 16px;font-size:14px;font-weight:600;color:#f87171">${fmt(params.endDate)}</td></tr>
+  const html = baseHtml(`
+    <tr><td bgcolor="#1a2744" style="background:linear-gradient(135deg,#1e3a5f,#1a2744);padding:28px 28px 22px;border-radius:16px 16px 0 0">
+      <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#60a5fa!important">Bokningsbekräftelse</p>
+      <p style="margin:0 0 6px;font-size:32px;font-weight:800;color:#ffffff!important;line-height:1">Välkommen!</p>
+      <p style="margin:0;font-size:15px;color:#93c5fd!important">${params.guestName} — ${params.propertyName}</p>
+    </td></tr>
+    <tr><td bgcolor="#0e1320" style="padding:24px 28px" class="mob-pad">
+      <p style="margin:0 0 20px;font-size:14px;color:#94a3b8!important;line-height:1.6">Vi ser fram emot ditt besök! Här är en sammanfattning av din bokning.</p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#111827" style="border-radius:10px;overflow:hidden;margin-bottom:16px">
+        <tr>
+          <td style="${tdLabel}"><span style="color:#94a3b8!important">📍 Stuga</span></td>
+          <td style="${tdVal};color:#ffffff!important">${params.propertyName}</td>
+        </tr><tr>
+          <td style="${tdLabel}"><span style="color:#94a3b8!important">📅 Incheckning</span></td>
+          <td style="${tdVal};color:#4ade80!important">${fmt(params.startDate)}</td>
+        </tr><tr>
+          <td style="padding:12px 16px;font-size:13px;color:#94a3b8!important"><span style="color:#94a3b8!important">📅 Utcheckning</span></td>
+          <td style="padding:12px 16px;font-size:14px;font-weight:600;color:#f87171!important">${fmt(params.endDate)}</td>
+        </tr>
       </table>
 
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:12px;overflow:hidden;margin-bottom:24px;background:rgba(255,255,255,0.03)">
-        <tr><td style="padding:11px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,0.05);width:40%">👤 Antal personer</td>
-            <td style="padding:11px 16px;font-size:14px;color:#e2e8f0;border-bottom:1px solid rgba(255,255,255,0.05)">${params.numberOfPersons ?? "–"}</td></tr>
-        <tr><td style="padding:11px 16px;font-size:13px;color:#94a3b8${params.notes ? ";border-bottom:1px solid rgba(255,255,255,0.05)" : ""}">🛥 Tillval</td>
-            <td style="padding:11px 16px;font-size:14px;color:#e2e8f0${params.notes ? ";border-bottom:1px solid rgba(255,255,255,0.05)" : ""}">${extras}</td></tr>
-        ${params.notes ? `<tr><td style="padding:11px 16px;font-size:13px;color:#94a3b8">📝 Övrigt</td>
-            <td style="padding:11px 16px;font-size:14px;color:#e2e8f0">${params.notes}</td></tr>` : ""}
+      <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#111827" style="border-radius:10px;overflow:hidden;margin-bottom:24px">
+        <tr>
+          <td style="${tdLabel}"><span style="color:#94a3b8!important">👤 Antal personer</span></td>
+          <td style="${tdVal};color:#e2e8f0!important">${params.numberOfPersons ?? "–"}</td>
+        </tr><tr>
+          <td style="padding:12px 16px;font-size:13px;color:#94a3b8!important${params.notes ? ";border-bottom:1px solid #1e293b" : ""}"><span style="color:#94a3b8!important">🛥 Tillval</span></td>
+          <td style="padding:12px 16px;font-size:14px;color:#e2e8f0!important${params.notes ? ";border-bottom:1px solid #1e293b" : ""}">${extras}</td>
+        </tr>${params.notes ? `<tr>
+          <td style="padding:12px 16px;font-size:13px;color:#94a3b8!important"><span style="color:#94a3b8!important">📝 Övrigt</span></td>
+          <td style="padding:12px 16px;font-size:14px;color:#e2e8f0!important">${params.notes}</td>
+        </tr>` : ""}
       </table>
 
       ${addBtns ? `
-      <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:20px">
-        <p style="margin:0 0 14px;font-size:12px;font-weight:700;color:#a5b4fc;letter-spacing:.06em;text-transform:uppercase">Vill du lägga till något?</p>
-        <table width="100%" cellpadding="0" cellspacing="0">
-          ${addBtns}
-        </table>
-        <p style="margin:14px 0 0;font-size:12px;color:#64748b;line-height:1.5">Klicka på en knapp — ändringen syns direkt i systemet och bekräftas omedelbart.</p>
-      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#13124a" style="border-radius:10px;overflow:hidden;border:1px solid #312e81">
+        <tr><td style="padding:16px 20px 10px">
+          <p style="margin:0 0 12px;font-size:11px;font-weight:700;color:#a5b4fc!important;letter-spacing:.08em;text-transform:uppercase">Vill du lägga till något?</p>
+          <table width="100%" cellpadding="0" cellspacing="0">${addBtns}</table>
+          <p style="margin:10px 0 0;font-size:12px;color:#64748b!important;line-height:1.5">Klicka på en knapp — ändringen syns direkt och bekräftas omedelbart.</p>
+        </td></tr>
+      </table>
       ` : `
-      <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:16px;text-align:center">
-        <p style="margin:0;font-size:13px;color:#4ade80">✓ Alla tillval är redan bokade</p>
-      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#052e16" style="border-radius:10px;border:1px solid #166534">
+        <tr><td style="padding:14px;text-align:center;font-size:13px;color:#4ade80!important">✓ Alla tillval är redan bokade</td></tr>
+      </table>
       `}
-    </div>
-    <div class="footer">Har du frågor? Svara på detta mail.</div>
+    </td></tr>
+    <tr><td bgcolor="#060810" style="padding:16px 28px;text-align:center;font-size:12px;color:#475569!important;border-radius:0 0 16px 16px">
+      Har du frågor? Svara på detta mail.
+    </td></tr>
   `);
 
   await t.sendMail({
