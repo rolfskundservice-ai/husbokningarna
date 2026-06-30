@@ -70,15 +70,15 @@ export async function sendGuestConfirmation(params: {
   ].filter(Boolean).join(" ") || "–";
 
   const btnStyle = (bg: string) =>
-    `display:block;padding:15px 12px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:700;text-align:center;color:#ffffff;background:${bg}`;
+    `display:block;padding:15px 16px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:700;text-align:center;color:#ffffff;background:${bg}`;
 
   const addBtns = [
     !params.numberOfBoats &&
-      `<tr><td style="padding:0 0 8px 0"><a href="${url("add-boat")}" style="${btnStyle("#2563eb")}">🛥 Lägg till båt<br><span style="font-size:12px;font-weight:400;color:#ffffffcc">1 750 kr</span></a></td></tr>`,
+      `<tr><td style="padding:0 0 10px 0"><a href="${url("add-boat")}" style="${btnStyle("#2563eb")}">🛥 Lägg till båt &nbsp;<span style="font-weight:400;font-size:13px">1 750 kr</span></a></td></tr>`,
     !params.cleaning &&
-      `<tr><td style="padding:0 0 8px 0"><a href="${url("add-cleaning")}" style="${btnStyle("#059669")}">🧹 Beställ städning<br><span style="font-size:12px;font-weight:400;color:#ffffffcc">2 200 kr</span></a></td></tr>`,
+      `<tr><td style="padding:0 0 10px 0"><a href="${url("add-cleaning")}" style="${btnStyle("#059669")}">🧹 Beställ städning &nbsp;<span style="font-weight:400;font-size:13px">2 200 kr</span></a></td></tr>`,
     !params.bedLinen &&
-      `<tr><td style="padding:0"><a href="${url("add-linen")}" style="${btnStyle("#7c3aed")}">🛏 Beställ lakan<br><span style="font-size:12px;font-weight:400;color:#ffffffcc">220 kr</span></a></td></tr>`,
+      `<tr><td style="padding:0"><a href="${url("add-linen")}" style="${btnStyle("#7c3aed")}">🛏 Beställ lakan &nbsp;<span style="font-weight:400;font-size:13px">220 kr</span></a></td></tr>`,
   ].filter(Boolean).join("\n");
 
   const html = baseHtml(`
@@ -89,7 +89,8 @@ export async function sendGuestConfirmation(params: {
         <p style="margin:0;font-size:15px;color:#93c5fd">${params.guestName} — ${params.propertyName}</p>
       </td>
     </tr></table>
-    <div class="body">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td class="body" bgcolor="#0e1320" style="padding:24px 28px">
       <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6">Vi ser fram emot ditt besök! Här är en sammanfattning av din bokning.</p>
 
       <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#111827" style="border-radius:10px;margin-bottom:12px">
@@ -122,7 +123,7 @@ export async function sendGuestConfirmation(params: {
         <tr><td style="padding:14px;text-align:center;font-size:13px;color:#4ade80">✓ Alla tillval är redan bokade</td></tr>
       </table>
       `}
-    </div>
+    </td></tr></table>
     <div class="footer">Har du frågor? Svara på detta mail.</div>
   `);
 
