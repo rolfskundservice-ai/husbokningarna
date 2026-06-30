@@ -84,22 +84,39 @@ export async function sendGuestConfirmation(params: {
   const html = baseHtml(`
     <div class="header">
       <div class="logo">Bokningsbekräftelse</div>
-      <div class="title">Välkommen, ${params.guestName}!</div>
+      <div class="title" style="font-size:28px;color:#ffffff">Välkommen!</div>
+      <div style="margin-top:6px;font-size:15px;color:#93c5fd">${params.guestName} — ${params.propertyName}</div>
     </div>
     <div class="body">
-      <div class="row"><span class="label">Stuga</span><span class="val">${params.propertyName}</span></div>
-      <div class="row"><span class="label">Incheckning</span><span class="val">${fmt(params.startDate)}</span></div>
-      <div class="row"><span class="label">Utcheckning</span><span class="val">${fmt(params.endDate)}</span></div>
-      <div class="row"><span class="label">Antal personer</span><span class="val">${params.numberOfPersons ?? "–"}</span></div>
-      <div class="row"><span class="label">Tillval</span><span class="val">${extras}</span></div>
-      ${params.notes ? `<div class="row"><span class="label">Övrigt</span><span class="val">${params.notes}</span></div>` : ""}
+      <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6">
+        Vi ser fram emot ditt besök! Här är en sammanfattning av din bokning.
+      </p>
+
+      <div style="background:rgba(59,130,246,0.08);border-radius:12px;padding:4px 0;margin-bottom:24px">
+        <div class="row" style="padding:12px 16px"><span class="label">📍 Stuga</span><span class="val" style="color:#fff;font-size:15px">${params.propertyName}</span></div>
+        <div class="row" style="padding:12px 16px"><span class="label">📅 Incheckning</span><span class="val" style="color:#4ade80">${fmt(params.startDate)}</span></div>
+        <div class="row" style="padding:12px 16px;border:none"><span class="label">📅 Utcheckning</span><span class="val" style="color:#f87171">${fmt(params.endDate)}</span></div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:4px 0;margin-bottom:24px">
+        <div class="row" style="padding:10px 16px"><span class="label">👤 Antal personer</span><span class="val">${params.numberOfPersons ?? "–"}</span></div>
+        <div class="row" style="padding:10px 16px;border:none"><span class="label">🛥 Tillval</span><span class="val">${extras}</span></div>
+        ${params.notes ? `<div class="row" style="padding:10px 16px;border:none"><span class="label">📝 Övrigt</span><span class="val">${params.notes}</span></div>` : ""}
+      </div>
+
       ${addBtns ? `
-      <p style="margin:28px 0 10px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b">Vill du lägga till något?</p>
-      <div class="btn-row">${addBtns}</div>
-      <div class="note">Klicka på en knapp ovan för att lägga till tillval. Ändringen bekräftas direkt och syns i systemet.</div>
-      ` : ""}
+      <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:20px">
+        <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#a5b4fc;letter-spacing:.05em;text-transform:uppercase">Vill du lägga till något?</p>
+        <div class="btn-row" style="margin:0">${addBtns}</div>
+        <p style="margin:14px 0 0;font-size:12px;color:#64748b;line-height:1.5">Klicka på en knapp — ändringen syns direkt i systemet och bekräftas omedelbart.</p>
+      </div>
+      ` : `
+      <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:16px;text-align:center">
+        <p style="margin:0;font-size:13px;color:#4ade80">✓ Alla tillval är redan bokade</p>
+      </div>
+      `}
     </div>
-    <div class="footer">${params.propertyName} • Bokningsbekräftelse</div>
+    <div class="footer">${params.propertyName} • Har du frågor? Svara på detta mail.</div>
   `);
 
   await t.sendMail({
