@@ -31,9 +31,10 @@ function baseHtml(content: string) {
   .badge-blue{background:#1e3a5f;color:#60a5fa;border:1px solid #1d4ed8}
   .footer{padding:18px 28px;background:rgba(0,0,0,0.2);font-size:12px;color:#475569;text-align:center}
   @media screen and (max-width:600px){
-    .wrap{margin:0!important;border-radius:0!important}
+    .wrap{margin:0!important;border-radius:0!important;width:100%!important}
+    .hdr{padding:22px 18px 18px!important}
     .body{padding:18px 16px!important}
-    .footer{padding:14px 16px!important}
+    .footer{padding:12px 16px!important}
   }
 </style></head><body><div class="wrap">${content}</div></body></html>`;
 }
@@ -82,7 +83,7 @@ export async function sendGuestConfirmation(params: {
 
   const html = baseHtml(`
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td bgcolor="#1a2744" style="padding:28px 28px 22px;background:linear-gradient(135deg,#1e3a5f,#1a2744)">
+      <td class="hdr" bgcolor="#1a2744" style="padding:28px 28px 22px;background:linear-gradient(135deg,#1e3a5f,#1a2744)">
         <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#60a5fa">Bokningsbekräftelse</p>
         <p style="margin:0 0 6px;font-size:32px;font-weight:800;color:#ffffff;line-height:1.1">Välkommen!</p>
         <p style="margin:0;font-size:15px;color:#93c5fd">${params.guestName} — ${params.propertyName}</p>
