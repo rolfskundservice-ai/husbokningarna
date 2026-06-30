@@ -526,6 +526,7 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
   const [startStr, setStartStr] = useState(dateKey(start));
   const [endStr, setEndStr] = useState(dateKey(end));
   const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [persons, setPersons] = useState(1);
   const [boats, setBoats] = useState(0);
   const [notes, setNotes] = useState("");
@@ -549,6 +550,7 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
         propertyId, startDate: startStr,
         endDate: endStr,
         guestName: guestName || undefined,
+        guestEmail: guestEmail || undefined,
         notes: notes || undefined,
         numberOfPersons: persons,
         numberOfBoats: boats,
@@ -588,11 +590,18 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
           </div>
         </div>
 
-        {/* Guest name */}
-        <div>
-          <label className="field-label">Fiskegrupp / gästnamn <Opt /></label>
-          <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)}
-            className="input-dark w-full" placeholder="Kowalski fiskesällskap" />
+        {/* Guest name + email */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="field-label">Fiskegrupp / gästnamn <Opt /></label>
+            <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)}
+              className="input-dark w-full" placeholder="Kowalski fiskesällskap" />
+          </div>
+          <div>
+            <label className="field-label">Gästens e-post <Opt /></label>
+            <input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)}
+              className="input-dark w-full" placeholder="gast@exempel.se" />
+          </div>
         </div>
 
         {/* Persons + Boats */}

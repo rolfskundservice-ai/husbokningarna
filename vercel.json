@@ -3,6 +3,10 @@
     {
       "path": "/api/sync/airbnb",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/reminder",
+      "schedule": "0 7 * * *"
     }
   ]
 }

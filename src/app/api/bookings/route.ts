@@ -4,7 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { BookingSource, BookingStatus } from "@prisma/client";
-import { sendBookingNotification } from "@/lib/email";
+import { sendGuestConfirmation, sendOwnerNotification } from "@/lib/email";
+import crypto from "crypto";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -43,6 +44,7 @@ export async function GET(req: Request) {
       startDate: b.startDate.toISOString(),
       endDate: b.endDate.toISOString(),
       guestName: b.guestName,
+      guestEmail: b.guestEmail,
       notes: b.notes,
       numberOfPersons: b.numberOfPersons,
       numberOfBoats: b.numberOfBoats,
@@ -59,6 +61,7 @@ const createBookingSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
   guestName: z.string().optional(),
+  guestEmail: z.string().email().optional().or(z.literal("")),
   notes: z.string().optional(),
   numberOfPersons: z.number().int().min(1).optional(),
   numberOfBoats: z.number().int().min(0).optional(),
@@ -76,7 +79,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { propertyId, startDate, endDate, guestName, notes, numberOfPersons, numberOfBoats, cleaning, bedLinen } = parsed.data;
+  const { propertyId, startDate, endDate, guestName, guestEmail, notes, numberOfPersons, numberOfBoats, cleaning, bedLinen } = parsed.data;
 
   if (session.user.role === "PARTNER") {
     const access = await prisma.propertyAccess.findUnique({
@@ -102,11 +105,10 @@ export async function POST(req: Request) {
   });
 
   if (overlapping) {
-    return NextResponse.json(
-      { error: "Perioden krockar med en befintlig bokning" },
-      { status: 409 }
-    );
+    return NextResponse.json({ error: "Perioden krockar med en befintlig bokning" }, { status: 409 });
   }
+
+  const addonToken = crypto.randomBytes(32).toString("hex");
 
   const booking = await prisma.booking.create({
     data: {
@@ -115,25 +117,52 @@ export async function POST(req: Request) {
       startDate: start,
       endDate: end,
       guestName: guestName || null,
+      guestEmail: guestEmail || null,
       notes: notes || null,
       numberOfPersons: numberOfPersons ?? null,
       numberOfBoats: numberOfBoats ?? null,
       cleaning: cleaning ?? false,
       bedLinen: bedLinen ?? false,
+      addonToken,
       source: BookingSource.INTERNAL,
       status: BookingStatus.CONFIRMED,
     },
   });
 
+  // Skicka mail i bakgrunden
   prisma.property.findUnique({ where: { id: propertyId }, select: { name: true } }).then((p) => {
     if (!p) return;
-    sendBookingNotification({
+
+    sendOwnerNotification({
       propertyName: p.name,
-      weekLabel: `${startDate} – ${endDate}`,
+      startDate: booking.startDate.toISOString(),
+      endDate: booking.endDate.toISOString(),
       guestName: guestName ?? null,
-      bookedBy: session.user.name,
+      guestEmail: guestEmail ?? null,
+      numberOfPersons: numberOfPersons ?? null,
+      numberOfBoats: numberOfBoats ?? null,
+      cleaning: cleaning ?? false,
+      bedLinen: bedLinen ?? false,
       notes: notes ?? null,
+      bookedBy: session.user.name,
     }).catch(() => {});
+
+    if (guestEmail) {
+      sendGuestConfirmation({
+        guestEmail,
+        guestName: guestName || "Gäst",
+        propertyName: p.name,
+        startDate: booking.startDate.toISOString(),
+        endDate: booking.endDate.toISOString(),
+        numberOfPersons: numberOfPersons ?? null,
+        numberOfBoats: numberOfBoats ?? null,
+        cleaning: cleaning ?? false,
+        bedLinen: bedLinen ?? false,
+        notes: notes ?? null,
+        bookingId: booking.id,
+        addonToken,
+      }).catch(() => {});
+    }
   });
 
   return NextResponse.json(booking, { status: 201 });
