@@ -63,32 +63,41 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   });
   if (!booking) return errorPage("Bokningen hittades inte eller länken är ogiltig.");
 
-  // Välj antal båtar — visa formulär
+  // Välj antal båtar — visa formulär, eller bekräfta om qty finns
   if (action === "add-boat") {
+    const qtyParam = searchParams.get("qty");
+
+    // Om qty finns → spara och visa bekräftelse
+    if (qtyParam !== null) {
+      const qty = Math.max(1, Math.min(10, parseInt(qtyParam, 10) || 1));
+      await prisma.booking.update({ where: { id: booking.id }, data: { numberOfBoats: qty } });
+      return successPage(`${qty} båt${qty !== 1 ? "ar" : ""} har lagts till i din bokning på ${booking.property.name}. Vi ses snart!`);
+    }
+
+    // Annars → visa formulär
     const current = booking.numberOfBoats ?? 0;
-    const startVal = Math.max(1, current + (current > 0 ? 0 : 1));
+    const startVal = Math.max(1, current > 0 ? current : 1);
+    const base = `/api/bookings/${params.id}/addon?token=${token}&action=add-boat`;
     return page(`<div class="card">
       <div class="icon">🛥</div>
       <h1>Lägg till båt</h1>
       <p>Hur många båtar vill du ha till din bokning på <strong style="color:#fff">${booking.property.name}</strong>?
       ${current > 0 ? `<br><br>Du har redan <span class="badge-green">${current} båt${current !== 1 ? "ar" : ""}</span> bokade.` : ""}
       </p>
-      <form method="POST" action="/api/bookings/${params.id}/addon">
-        <input type="hidden" name="token" value="${token}">
-        <input type="hidden" name="action" value="add-boat">
-        <div class="stepper">
-          <button type="button" onclick="dec()">−</button>
-          <input id="qty" name="qty" type="number" min="1" max="10" value="${startVal}" oninput="upd()">
-          <button type="button" onclick="inc()">+</button>
-        </div>
-        <p id="price" style="font-size:13px;color:#60a5fa;margin-bottom:20px">${startVal} båt${startVal !== 1 ? "ar" : ""} = <strong>${startVal * 1750} kr</strong></p>
-        <button type="submit" class="btn">Bekräfta bokning</button>
-      </form>
+      <div class="stepper">
+        <button type="button" onclick="dec()">−</button>
+        <input id="qty" type="number" min="1" max="10" value="${startVal}" oninput="upd()">
+        <button type="button" onclick="inc()">+</button>
+      </div>
+      <p id="price" style="font-size:13px;color:#60a5fa;margin-bottom:24px">${startVal} båt${startVal !== 1 ? "ar" : ""} = <strong>${startVal * 1750} kr</strong></p>
+      <button class="btn" onclick="confirm()">Bekräfta bokning</button>
       <script>
+        var base="${base}";
         function v(){return Math.max(1,Math.min(10,+document.getElementById('qty').value||1))}
         function dec(){document.getElementById('qty').value=Math.max(1,v()-1);upd()}
         function inc(){document.getElementById('qty').value=Math.min(10,v()+1);upd()}
         function upd(){var n=v();document.getElementById('price').innerHTML=n+' båt'+(n!==1?'ar':'')+' = <strong>'+n*1750+' kr</strong>'}
+        function confirm(){window.location.href=base+'&qty='+v()}
       </script>
     </div>`);
   }
