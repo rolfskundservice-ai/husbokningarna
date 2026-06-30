@@ -26,14 +26,14 @@ function baseHtml(content: string) {
   .logo{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#60a5fa;margin-bottom:8px}
   .title{font-size:22px;font-weight:700;color:#fff;margin:0}
   .body{padding:28px 32px}
-  .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px}
-  .row .label{color:#94a3b8}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px;gap:16px}
+  .row .label{color:#94a3b8;flex-shrink:0}
   .row .val{color:#e2e8f0;font-weight:500;text-align:right}
   .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;margin-right:4px}
   .badge-green{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3)}
   .badge-blue{background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3)}
-  .btn-row{margin:24px 0 8px;display:flex;gap:12px;flex-wrap:wrap}
-  .btn{display:inline-block;padding:13px 22px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:600;text-align:center}
+  .btn-row{margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+  .btn{display:block;padding:14px 12px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:600;text-align:center;box-sizing:border-box}
   .btn-primary{background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff}
   .btn-secondary{background:rgba(255,255,255,0.07);color:#cbd5e1;border:1px solid rgba(255,255,255,0.1)}
   .btn-green{background:linear-gradient(135deg,#059669,#0d9488);color:#fff}
