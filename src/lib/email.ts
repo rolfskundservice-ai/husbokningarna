@@ -78,7 +78,7 @@ export async function sendGuestConfirmation(params: {
   ].filter(Boolean).join(" ") || "–";
 
   const btnStyle = (bg: string) =>
-    `display:block;padding:13px 8px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:600;text-align:center;color:#fff;background:${bg}`;
+    `display:block;padding:15px 12px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:700;text-align:center;color:#ffffff;background:${bg};letter-spacing:.01em`;
 
   const addBtns = [
     !params.numberOfBoats &&
@@ -92,7 +92,7 @@ export async function sendGuestConfirmation(params: {
   const html = baseHtml(`
     <div class="header">
       <div class="logo">Bokningsbekräftelse</div>
-      <div class="title" style="font-size:28px;color:#ffffff">Välkommen!</div>
+      <div class="title" style="font-size:32px;color:#ffffff;font-weight:800">Välkommen!</div>
       <div style="margin-top:6px;font-size:15px;color:#93c5fd">${params.guestName} — ${params.propertyName}</div>
     </div>
     <div class="body">
@@ -132,7 +132,7 @@ export async function sendGuestConfirmation(params: {
       </div>
       `}
     </div>
-    <div class="footer">${params.propertyName} • Har du frågor? Svara på detta mail.</div>
+    <div class="footer">Har du frågor? Svara på detta mail.</div>
   `);
 
   await t.sendMail({
