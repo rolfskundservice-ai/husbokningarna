@@ -73,23 +73,22 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       <p>Hur många båtar vill du ha till din bokning på <strong style="color:#fff">${booking.property.name}</strong>?
       ${current > 0 ? `<br><br>Du har redan <span class="badge-green">${current} båt${current !== 1 ? "ar" : ""}</span> bokade.` : ""}
       </p>
-      <div class="stepper">
-        <button type="button" onclick="dec()">−</button>
-        <input id="qty" type="number" min="1" max="10" value="${startVal}" oninput="upd()">
-        <button type="button" onclick="inc()">+</button>
-      </div>
-      <p id="price" style="font-size:13px;color:#60a5fa;margin-bottom:20px">${startVal} båt = <strong>${startVal * 1750} kr</strong></p>
       <form method="POST" action="/api/bookings/${params.id}/addon">
         <input type="hidden" name="token" value="${token}">
         <input type="hidden" name="action" value="add-boat">
-        <input type="hidden" name="qty" id="qtyHidden" value="${startVal}">
+        <div class="stepper">
+          <button type="button" onclick="dec()">−</button>
+          <input id="qty" name="qty" type="number" min="1" max="10" value="${startVal}" oninput="upd()">
+          <button type="button" onclick="inc()">+</button>
+        </div>
+        <p id="price" style="font-size:13px;color:#60a5fa;margin-bottom:20px">${startVal} båt${startVal !== 1 ? "ar" : ""} = <strong>${startVal * 1750} kr</strong></p>
         <button type="submit" class="btn">Bekräfta bokning</button>
       </form>
       <script>
-        function val(){return Math.max(1,Math.min(10,+document.getElementById('qty').value||1))}
-        function dec(){document.getElementById('qty').value=Math.max(1,val()-1);upd()}
-        function inc(){document.getElementById('qty').value=Math.min(10,val()+1);upd()}
-        function upd(){var v=val();document.getElementById('qtyHidden').value=v;document.getElementById('price').innerHTML=v+' båt'+(v!==1?'ar':'')+' = <strong>'+v*1750+' kr</strong>'}
+        function v(){return Math.max(1,Math.min(10,+document.getElementById('qty').value||1))}
+        function dec(){document.getElementById('qty').value=Math.max(1,v()-1);upd()}
+        function inc(){document.getElementById('qty').value=Math.min(10,v()+1);upd()}
+        function upd(){var n=v();document.getElementById('price').innerHTML=n+' båt'+(n!==1?'ar':'')+' = <strong>'+n*1750+' kr</strong>'}
       </script>
     </div>`);
   }
