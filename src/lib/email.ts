@@ -72,13 +72,16 @@ export async function sendGuestConfirmation(params: {
       `<span class="badge badge-blue">✓ ${params.numberOfBoats} båt${params.numberOfBoats !== 1 ? "ar" : ""}</span>`,
   ].filter(Boolean).join(" ") || "–";
 
+  const btnStyle = (bg: string) =>
+    `display:block;padding:13px 8px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:600;text-align:center;color:#fff;background:${bg}`;
+
   const addBtns = [
     !params.numberOfBoats &&
-      `<a href="${url("add-boat")}" class="btn btn-primary">+ Lägg till båt</a>`,
+      `<td style="padding:0 5px 0 0"><a href="${url("add-boat")}" style="${btnStyle("linear-gradient(135deg,#2563eb,#7c3aed)")}">🛥 Lägg till båt<br><span style="font-size:11px;font-weight:400;opacity:.8">1 750 kr</span></a></td>`,
     !params.cleaning &&
-      `<a href="${url("add-cleaning")}" class="btn btn-green">+ Beställ städning</a>`,
+      `<td style="padding:0 5px"><a href="${url("add-cleaning")}" style="${btnStyle("linear-gradient(135deg,#059669,#0d9488)")}">🧹 Beställ städning<br><span style="font-size:11px;font-weight:400;opacity:.8">2 200 kr</span></a></td>`,
     !params.bedLinen &&
-      `<a href="${url("add-linen")}" class="btn btn-secondary">+ Beställ lakan</a>`,
+      `<td style="padding:0 0 0 5px"><a href="${url("add-linen")}" style="${btnStyle("linear-gradient(135deg,#7c3aed,#a855f7)")}">🛏 Beställ lakan<br><span style="font-size:11px;font-weight:400;opacity:.8">220 kr</span></a></td>`,
   ].filter(Boolean).join("\n");
 
   const html = baseHtml(`
@@ -92,22 +95,30 @@ export async function sendGuestConfirmation(params: {
         Vi ser fram emot ditt besök! Här är en sammanfattning av din bokning.
       </p>
 
-      <div style="background:rgba(59,130,246,0.08);border-radius:12px;padding:4px 0;margin-bottom:24px">
-        <div class="row" style="padding:12px 16px"><span class="label">📍 Stuga</span><span class="val" style="color:#fff;font-size:15px">${params.propertyName}</span></div>
-        <div class="row" style="padding:12px 16px"><span class="label">📅 Incheckning</span><span class="val" style="color:#4ade80">${fmt(params.startDate)}</span></div>
-        <div class="row" style="padding:12px 16px;border:none"><span class="label">📅 Utcheckning</span><span class="val" style="color:#f87171">${fmt(params.endDate)}</span></div>
-      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:12px;overflow:hidden;margin-bottom:20px;background:rgba(59,130,246,0.08)">
+        <tr><td style="padding:13px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,0.05);width:40%">📍 Stuga</td>
+            <td style="padding:13px 16px;font-size:14px;font-weight:600;color:#fff;border-bottom:1px solid rgba(255,255,255,0.05)">${params.propertyName}</td></tr>
+        <tr><td style="padding:13px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,0.05)">📅 Incheckning</td>
+            <td style="padding:13px 16px;font-size:14px;font-weight:600;color:#4ade80;border-bottom:1px solid rgba(255,255,255,0.05)">${fmt(params.startDate)}</td></tr>
+        <tr><td style="padding:13px 16px;font-size:13px;color:#94a3b8">📅 Utcheckning</td>
+            <td style="padding:13px 16px;font-size:14px;font-weight:600;color:#f87171">${fmt(params.endDate)}</td></tr>
+      </table>
 
-      <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:4px 0;margin-bottom:24px">
-        <div class="row" style="padding:10px 16px"><span class="label">👤 Antal personer</span><span class="val">${params.numberOfPersons ?? "–"}</span></div>
-        <div class="row" style="padding:10px 16px;border:none"><span class="label">🛥 Tillval</span><span class="val">${extras}</span></div>
-        ${params.notes ? `<div class="row" style="padding:10px 16px;border:none"><span class="label">📝 Övrigt</span><span class="val">${params.notes}</span></div>` : ""}
-      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:12px;overflow:hidden;margin-bottom:24px;background:rgba(255,255,255,0.03)">
+        <tr><td style="padding:11px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,0.05);width:40%">👤 Antal personer</td>
+            <td style="padding:11px 16px;font-size:14px;color:#e2e8f0;border-bottom:1px solid rgba(255,255,255,0.05)">${params.numberOfPersons ?? "–"}</td></tr>
+        <tr><td style="padding:11px 16px;font-size:13px;color:#94a3b8${params.notes ? ";border-bottom:1px solid rgba(255,255,255,0.05)" : ""}">🛥 Tillval</td>
+            <td style="padding:11px 16px;font-size:14px;color:#e2e8f0${params.notes ? ";border-bottom:1px solid rgba(255,255,255,0.05)" : ""}">${extras}</td></tr>
+        ${params.notes ? `<tr><td style="padding:11px 16px;font-size:13px;color:#94a3b8">📝 Övrigt</td>
+            <td style="padding:11px 16px;font-size:14px;color:#e2e8f0">${params.notes}</td></tr>` : ""}
+      </table>
 
       ${addBtns ? `
       <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:20px">
-        <p style="margin:0 0 14px;font-size:13px;font-weight:700;color:#a5b4fc;letter-spacing:.05em;text-transform:uppercase">Vill du lägga till något?</p>
-        <div class="btn-row" style="margin:0">${addBtns}</div>
+        <p style="margin:0 0 14px;font-size:12px;font-weight:700;color:#a5b4fc;letter-spacing:.06em;text-transform:uppercase">Vill du lägga till något?</p>
+        <table width="100%" cellpadding="0" cellspacing="0"><tr>
+          ${addBtns}
+        </tr></table>
         <p style="margin:14px 0 0;font-size:12px;color:#64748b;line-height:1.5">Klicka på en knapp — ändringen syns direkt i systemet och bekräftas omedelbart.</p>
       </div>
       ` : `

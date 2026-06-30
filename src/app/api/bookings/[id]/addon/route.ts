@@ -66,26 +66,30 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   // Välj antal båtar — visa formulär
   if (action === "add-boat") {
     const current = booking.numberOfBoats ?? 0;
+    const startVal = Math.max(1, current + (current > 0 ? 0 : 1));
     return page(`<div class="card">
       <div class="icon">🛥</div>
       <h1>Lägg till båt</h1>
       <p>Hur många båtar vill du ha till din bokning på <strong style="color:#fff">${booking.property.name}</strong>?
-      ${current > 0 ? `<br><br>Du har redan <span class="badge-green">${current} båt${current !== 1 ? "ar" : ""}</span> bokade.` : ""}</p>
+      ${current > 0 ? `<br><br>Du har redan <span class="badge-green">${current} båt${current !== 1 ? "ar" : ""}</span> bokade.` : ""}
+      </p>
       <div class="stepper">
-        <button onclick="dec()">−</button>
-        <input id="qty" type="number" min="1" max="10" value="${Math.max(1, current + 1)}">
-        <button onclick="inc()">+</button>
+        <button type="button" onclick="dec()">−</button>
+        <input id="qty" type="number" min="1" max="10" value="${startVal}" oninput="upd()">
+        <button type="button" onclick="inc()">+</button>
       </div>
-      <form method="POST">
+      <p id="price" style="font-size:13px;color:#60a5fa;margin-bottom:20px">${startVal} båt = <strong>${startVal * 1750} kr</strong></p>
+      <form method="POST" action="/api/bookings/${params.id}/addon">
         <input type="hidden" name="token" value="${token}">
         <input type="hidden" name="action" value="add-boat">
-        <input type="hidden" name="qty" id="qtyHidden" value="${Math.max(1, current + 1)}">
-        <button type="submit" class="btn" onclick="sync()">Bekräfta</button>
+        <input type="hidden" name="qty" id="qtyHidden" value="${startVal}">
+        <button type="submit" class="btn">Bekräfta bokning</button>
       </form>
       <script>
-        function dec(){var i=document.getElementById('qty');i.value=Math.max(1,+i.value-1)}
-        function inc(){var i=document.getElementById('qty');i.value=Math.min(10,+i.value+1)}
-        function sync(){document.getElementById('qtyHidden').value=document.getElementById('qty').value}
+        function val(){return Math.max(1,Math.min(10,+document.getElementById('qty').value||1))}
+        function dec(){document.getElementById('qty').value=Math.max(1,val()-1);upd()}
+        function inc(){document.getElementById('qty').value=Math.min(10,val()+1);upd()}
+        function upd(){var v=val();document.getElementById('qtyHidden').value=v;document.getElementById('price').innerHTML=v+' båt'+(v!==1?'ar':'')+' = <strong>'+v*1750+' kr</strong>'}
       </script>
     </div>`);
   }
@@ -94,14 +98,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   if (action === "add-cleaning") {
     if (booking.cleaning) return successPage("Städning är redan beställd — ingen ändring gjordes.");
     await prisma.booking.update({ where: { id: booking.id }, data: { cleaning: true } });
-    return successPage(`Städning har beställts till din bokning på ${booking.property.name}!`);
+    return successPage(`Städning (2 200 kr) har beställts till din bokning på ${booking.property.name}!`);
   }
 
-  // Lakan
   if (action === "add-linen") {
     if (booking.bedLinen) return successPage("Lakan är redan beställt — ingen ändring gjordes.");
     await prisma.booking.update({ where: { id: booking.id }, data: { bedLinen: true } });
-    return successPage(`Lakan har beställts till din bokning på ${booking.property.name}!`);
+    return successPage(`Lakan (220 kr) har beställts till din bokning på ${booking.property.name}!`);
   }
 
   return errorPage("Okänd åtgärd.");
