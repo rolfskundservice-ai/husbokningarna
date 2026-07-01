@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { BOAT_TYPES, BoatCounts, BoatId, boatPrice, boatSummary } from "./boats";
 
 function getResend() {
   if (!process.env.RESEND_API_KEY) return null;
@@ -69,7 +70,8 @@ export async function sendGuestConfirmation(params: {
   startDate: string;
   endDate: string;
   numberOfPersons: number | null;
-  numberOfBoats: number | null;
+  boats: BoatCounts;
+  nights: number;
   cleaning: boolean;
   bedLinen: boolean;
   notes: string | null;
@@ -83,19 +85,26 @@ export async function sendGuestConfirmation(params: {
   const url = (action: string) =>
     `${base}/api/bookings/${params.bookingId}/addon?token=${params.addonToken}&action=${action}`;
 
+  const hasBoats = BOAT_TYPES.some(t => params.boats[t.id as BoatId] > 0);
+
+  const boatLines = hasBoats
+    ? BOAT_TYPES.filter(t => params.boats[t.id as BoatId] > 0)
+        .map(t => `${params.boats[t.id as BoatId]}× ${t.label} (${boatPrice(t.weekPrice, params.nights).toLocaleString("sv-SE")} kr)`)
+        .join(", ")
+    : null;
+
   const extras = [
     params.cleaning && `<span class="badge badge-green">✓ Städning</span>`,
     params.bedLinen && `<span class="badge badge-blue">✓ Lakan</span>`,
-    (params.numberOfBoats ?? 0) > 0 &&
-      `<span class="badge badge-blue">✓ ${params.numberOfBoats} båt${params.numberOfBoats !== 1 ? "ar" : ""}</span>`,
+    boatLines && `<span class="badge badge-blue">✓ ${boatLines}</span>`,
   ].filter(Boolean).join(" ") || "–";
 
   const btnStyle = (bg: string) =>
     `display:block;padding:15px 16px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:700;text-align:center;color:#ffffff;background:${bg}`;
 
   const addBtns = [
-    !params.numberOfBoats &&
-      `<tr><td style="padding:0 0 10px 0"><a href="${url("add-boat")}" class="btn-b" style="${btnStyle("#2563eb")}">🛥 Lägg till båt &nbsp;<span style="font-weight:400;font-size:13px;color:#ffffff">1 750 kr</span></a></td></tr>`,
+    !hasBoats &&
+      `<tr><td style="padding:0 0 10px 0"><a href="${url("add-boat")}" class="btn-b" style="${btnStyle("#2563eb")}">🛥 Välj och boka båt</a></td></tr>`,
     !params.cleaning &&
       `<tr><td style="padding:0 0 10px 0"><a href="${url("add-cleaning")}" class="btn-g" style="${btnStyle("#059669")}">🧹 Beställ städning &nbsp;<span style="font-weight:400;font-size:13px;color:#ffffff">2 200 kr</span></a></td></tr>`,
     !params.bedLinen &&
@@ -162,7 +171,8 @@ export async function sendOwnerNotification(params: {
   guestName: string | null;
   guestEmail: string | null;
   numberOfPersons: number | null;
-  numberOfBoats: number | null;
+  boats: BoatCounts;
+  nights: number;
   cleaning: boolean;
   bedLinen: boolean;
   notes: string | null;
@@ -174,6 +184,12 @@ export async function sendOwnerNotification(params: {
 
   const extras = [params.cleaning && "Städning", params.bedLinen && "Lakan"]
     .filter(Boolean).join(", ") || "Inga";
+
+  const boatStr = boatSummary(params.boats) !== "–"
+    ? BOAT_TYPES.filter(t => params.boats[t.id as BoatId] > 0)
+        .map(t => `${params.boats[t.id as BoatId]}× ${t.label} (${boatPrice(t.weekPrice, params.nights).toLocaleString("sv-SE")} kr)`)
+        .join(", ")
+    : "–";
 
   const html = baseHtml(`
     <tr><td class="hdr" bgcolor="#1a2744" style="padding:24px 28px;background:linear-gradient(135deg,#1e3a5f,#1a2744);border-radius:16px 16px 0 0">
@@ -188,7 +204,7 @@ export async function sendOwnerNotification(params: {
           ["Incheckning", fmt(params.startDate)],
           ["Utcheckning", fmt(params.endDate)],
           ["Antal personer", String(params.numberOfPersons ?? "–")],
-          ["Antal båtar", `${params.numberOfBoats ?? 0} st`],
+          ["Båtar", boatStr],
           ["Tillval", extras],
           ...(params.notes ? [["Anteckning", params.notes]] : []),
           ["Bokad av", params.bookedBy],
@@ -217,7 +233,8 @@ export async function sendCaretakerReminder(checkins: Array<{
   endDate: string;
   guestName: string | null;
   numberOfPersons: number | null;
-  numberOfBoats: number | null;
+  boats: BoatCounts;
+  nights: number;
   cleaning: boolean;
   bedLinen: boolean;
   notes: string | null;
@@ -242,7 +259,7 @@ export async function sendCaretakerReminder(checkins: Array<{
       <tr><td style="padding:10px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b">Antal personer</td>
           <td style="padding:10px 16px;font-size:14px;color:#e2e8f0;border-bottom:1px solid #1e293b">${c.numberOfPersons ?? "–"}</td></tr>
       <tr><td style="padding:10px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b">Båtar</td>
-          <td style="padding:10px 16px;font-size:14px;color:${(c.numberOfBoats ?? 0) > 0 ? "#60a5fa" : "#94a3b8"};border-bottom:1px solid #1e293b">${c.numberOfBoats ?? 0} st</td></tr>
+          <td style="padding:10px 16px;font-size:14px;color:${boatSummary(c.boats) !== "–" ? "#60a5fa" : "#94a3b8"};border-bottom:1px solid #1e293b">${boatSummary(c.boats)}</td></tr>
       <tr><td style="padding:10px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b">Städning</td>
           <td style="padding:10px 16px;font-size:14px;color:${c.cleaning ? "#4ade80" : "#94a3b8"};border-bottom:1px solid #1e293b">${c.cleaning ? "Ja" : "Nej"}</td></tr>
       <tr><td style="padding:10px 16px;font-size:13px;color:#94a3b8${c.notes ? ";border-bottom:1px solid #1e293b" : ""}">Lakan</td>

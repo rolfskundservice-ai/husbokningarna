@@ -6,6 +6,7 @@ import { z } from "zod";
 import { BookingSource, BookingStatus } from "@prisma/client";
 import { sendGuestConfirmation, sendOwnerNotification } from "@/lib/email";
 import crypto from "crypto";
+import { totalBoats } from "@/lib/boats";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -47,7 +48,11 @@ export async function GET(req: Request) {
       guestEmail: b.guestEmail,
       notes: b.notes,
       numberOfPersons: b.numberOfPersons,
-      numberOfBoats: b.numberOfBoats,
+      boat6hp: b.boat6hp,
+      boat99hp: b.boat99hp,
+      boat20hp: b.boat20hp,
+      boat25hp: b.boat25hp,
+      numberOfBoats: totalBoats(b),
       cleaning: b.cleaning,
       bedLinen: b.bedLinen,
       source: b.source,
@@ -55,6 +60,13 @@ export async function GET(req: Request) {
     }))
   );
 }
+
+const boatSchema = z.object({
+  boat6hp:  z.number().int().min(0).max(2).optional().default(0),
+  boat99hp: z.number().int().min(0).max(2).optional().default(0),
+  boat20hp: z.number().int().min(0).max(2).optional().default(0),
+  boat25hp: z.number().int().min(0).max(1).optional().default(0),
+});
 
 const createBookingSchema = z.object({
   propertyId: z.string().min(1),
@@ -64,10 +76,9 @@ const createBookingSchema = z.object({
   guestEmail: z.string().email().optional().or(z.literal("")),
   notes: z.string().optional(),
   numberOfPersons: z.number().int().min(1).optional(),
-  numberOfBoats: z.number().int().min(0).optional(),
   cleaning: z.boolean().optional(),
   bedLinen: z.boolean().optional(),
-});
+}).merge(boatSchema);
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -79,7 +90,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { propertyId, startDate, endDate, guestName, guestEmail, notes, numberOfPersons, numberOfBoats, cleaning, bedLinen } = parsed.data;
+  const { propertyId, startDate, endDate, guestName, guestEmail, notes,
+    numberOfPersons, cleaning, bedLinen,
+    boat6hp, boat99hp, boat20hp, boat25hp } = parsed.data;
 
   if (session.user.role === "PARTNER") {
     const access = await prisma.propertyAccess.findUnique({
@@ -95,6 +108,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Slutdatum måste vara efter startdatum" }, { status: 400 });
   }
 
+  // Kolla att property inte är dubbelbokad
   const overlapping = await prisma.booking.findFirst({
     where: {
       propertyId,
@@ -103,9 +117,30 @@ export async function POST(req: Request) {
       endDate: { gt: start },
     },
   });
-
   if (overlapping) {
     return NextResponse.json({ error: "Perioden krockar med en befintlig bokning" }, { status: 409 });
+  }
+
+  // Kolla båttillgänglighet globalt (alla stugor delar på båtarna)
+  if (boat6hp || boat99hp || boat20hp || boat25hp) {
+    const overlapBookings = await prisma.booking.findMany({
+      where: {
+        status: BookingStatus.CONFIRMED,
+        startDate: { lt: end },
+        endDate: { gt: start },
+      },
+      select: { boat6hp: true, boat99hp: true, boat20hp: true, boat25hp: true },
+    });
+
+    const used6hp  = overlapBookings.reduce((s, b) => s + b.boat6hp,  0);
+    const used99hp = overlapBookings.reduce((s, b) => s + b.boat99hp, 0);
+    const used20hp = overlapBookings.reduce((s, b) => s + b.boat20hp, 0);
+    const used25hp = overlapBookings.reduce((s, b) => s + b.boat25hp, 0);
+
+    if (boat6hp  > 2 - used6hp)  return NextResponse.json({ error: `Bara ${2 - used6hp} st 6 hk-båtar tillgängliga` },  { status: 409 });
+    if (boat99hp > 2 - used99hp) return NextResponse.json({ error: `Bara ${2 - used99hp} st 9,9 hk-båtar tillgängliga` }, { status: 409 });
+    if (boat20hp > 2 - used20hp) return NextResponse.json({ error: `Bara ${2 - used20hp} st 20 hk-båtar tillgängliga` }, { status: 409 });
+    if (boat25hp > 1 - used25hp) return NextResponse.json({ error: `Bara ${1 - used25hp} st 25 hk-båtar tillgängliga` }, { status: 409 });
   }
 
   const addonToken = crypto.randomBytes(32).toString("hex");
@@ -120,7 +155,7 @@ export async function POST(req: Request) {
       guestEmail: guestEmail || null,
       notes: notes || null,
       numberOfPersons: numberOfPersons ?? null,
-      numberOfBoats: numberOfBoats ?? null,
+      boat6hp, boat99hp, boat20hp, boat25hp,
       cleaning: cleaning ?? false,
       bedLinen: bedLinen ?? false,
       addonToken,
@@ -129,7 +164,9 @@ export async function POST(req: Request) {
     },
   });
 
-  // Skicka mail i bakgrunden
+  const boats = { boat6hp, boat99hp, boat20hp, boat25hp };
+  const nights = Math.round((end.getTime() - start.getTime()) / 86400000);
+
   prisma.property.findUnique({ where: { id: propertyId }, select: { name: true } }).then((p) => {
     if (!p) return;
 
@@ -140,7 +177,8 @@ export async function POST(req: Request) {
       guestName: guestName ?? null,
       guestEmail: guestEmail ?? null,
       numberOfPersons: numberOfPersons ?? null,
-      numberOfBoats: numberOfBoats ?? null,
+      boats,
+      nights,
       cleaning: cleaning ?? false,
       bedLinen: bedLinen ?? false,
       notes: notes ?? null,
@@ -155,7 +193,8 @@ export async function POST(req: Request) {
         startDate: booking.startDate.toISOString(),
         endDate: booking.endDate.toISOString(),
         numberOfPersons: numberOfPersons ?? null,
-        numberOfBoats: numberOfBoats ?? null,
+        boats,
+        nights,
         cleaning: cleaning ?? false,
         bedLinen: bedLinen ?? false,
         notes: notes ?? null,

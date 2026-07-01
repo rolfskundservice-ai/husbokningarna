@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getISOWeek } from "date-fns";
+import { BOAT_TYPES, BoatId, boatPrice } from "@/lib/boats";
 
 export interface Booking {
   id: string;
@@ -11,7 +12,11 @@ export interface Booking {
   userName: string | null;
   notes: string | null;
   numberOfPersons: number | null;
-  numberOfBoats: number | null;
+  numberOfBoats: number | null; // computed sum, for display
+  boat6hp: number;
+  boat99hp: number;
+  boat20hp: number;
+  boat25hp: number;
   cleaning: boolean;
   bedLinen: boolean;
   source: "INTERNAL" | "AIRBNB" | "MANUAL";
@@ -528,7 +533,9 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [persons, setPersons] = useState(1);
-  const [boats, setBoats] = useState(0);
+  const [boatCounts, setBoatCounts] = useState<Record<BoatId, number>>({
+    boat6hp: 0, boat99hp: 0, boat20hp: 0, boat25hp: 0,
+  });
   const [notes, setNotes] = useState("");
   const [cleaning, setCleaning] = useState(false);
   const [bedLinen, setBedLinen] = useState(false);
@@ -539,10 +546,13 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
     (new Date(endStr).getTime() - new Date(startStr).getTime()) / 86400000
   ));
 
+  function setBoat(id: BoatId, val: number) {
+    setBoatCounts(prev => ({ ...prev, [id]: Math.max(0, val) }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true); setError(null);
-    // endStr is already the exclusive checkout date
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -553,7 +563,7 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
         guestEmail: guestEmail || undefined,
         notes: notes || undefined,
         numberOfPersons: persons,
-        numberOfBoats: boats,
+        ...boatCounts,
         cleaning,
         bedLinen,
       }),
@@ -562,6 +572,8 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
     if (!res.ok) { const d = await res.json(); setError(d.error || "Kunde inte skapa bokningen"); return; }
     onBooked();
   }
+
+  const boatTotal = BOAT_TYPES.reduce((s, t) => s + boatPrice(t.weekPrice, nights) * boatCounts[t.id as BoatId], 0);
 
   return (
     <Modal onClose={onClose}>
@@ -604,16 +616,50 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
           </div>
         </div>
 
-        {/* Persons + Boats */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="field-label">Antal personer</label>
-            <Stepper value={persons} min={1} max={100} onChange={setPersons} />
+        {/* Persons */}
+        <div>
+          <label className="field-label">Antal personer</label>
+          <Stepper value={persons} min={1} max={100} onChange={setPersons} />
+        </div>
+
+        {/* Boats per type */}
+        <div>
+          <label className="field-label mb-2 block">Båtar <Opt /></label>
+          <div className="space-y-2">
+            {BOAT_TYPES.map(t => {
+              const id = t.id as BoatId;
+              const price = boatPrice(t.weekPrice, nights);
+              const max = t.total;
+              const count = boatCounts[id];
+              return (
+                <div key={id}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3"
+                  style={{ background: count > 0 ? "rgba(37,99,235,0.12)" : "rgba(255,255,255,0.04)", border: count > 0 ? "1px solid rgba(37,99,235,0.4)" : "1px solid rgba(255,255,255,0.08)" }}
+                >
+                  <span className="text-sm font-semibold text-white flex-1">🚤 Motor {t.label}</span>
+                  <span className="text-xs text-blue-400">{price.toLocaleString("sv-SE")} kr</span>
+                  <div className="flex items-center gap-1.5">
+                    <button type="button"
+                      onClick={() => setBoat(id, count - 1)}
+                      disabled={count === 0}
+                      className="h-8 w-8 flex items-center justify-center rounded-lg text-base font-bold text-gray-300 hover:text-white disabled:opacity-30 transition"
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>−</button>
+                    <span className="w-6 text-center text-sm font-bold text-white">{count}</span>
+                    <button type="button"
+                      onClick={() => setBoat(id, count + 1)}
+                      disabled={count >= max}
+                      className="h-8 w-8 flex items-center justify-center rounded-lg text-base font-bold text-gray-300 hover:text-white disabled:opacity-30 transition"
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>+</button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div>
-            <label className="field-label">Antal båtar att hyra</label>
-            <Stepper value={boats} min={0} max={20} onChange={setBoats} />
-          </div>
+          {boatTotal > 0 && (
+            <p className="mt-2 text-right text-sm text-blue-400">
+              Båtar totalt: <strong className="text-white">{boatTotal.toLocaleString("sv-SE")} kr</strong>
+            </p>
+          )}
         </div>
 
         {/* Städning + Lakan */}
@@ -692,8 +738,12 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
         {booking.numberOfPersons != null && (
           <DetailRow label="Antal personer" value={`${booking.numberOfPersons} person${booking.numberOfPersons !== 1 ? "er" : ""}`} />
         )}
-        {booking.numberOfBoats != null && (
-          <DetailRow label="Båtar" value={`${booking.numberOfBoats} båt${booking.numberOfBoats !== 1 ? "ar" : ""}`} />
+        {(booking.numberOfBoats ?? 0) > 0 && (
+          <DetailRow label="Båtar" value={
+            BOAT_TYPES.filter(t => ((booking as unknown as Record<string, number>)[t.id] ?? 0) > 0)
+              .map(t => `${(booking as unknown as Record<string, number>)[t.id]}× ${t.label}`)
+              .join(", ")
+          } />
         )}
         {(booking.cleaning || booking.bedLinen) && (
           <DetailRow

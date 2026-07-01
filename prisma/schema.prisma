@@ -88,7 +88,10 @@ model Booking {
   guestName       String?
   notes           String?
   numberOfPersons Int?
-  numberOfBoats   Int?
+  boat6hp         Int      @default(0)
+  boat99hp        Int      @default(0)
+  boat20hp        Int      @default(0)
+  boat25hp        Int      @default(0)
   cleaning        Boolean  @default(false)
   bedLinen        Boolean  @default(false)
   guestEmail      String?
