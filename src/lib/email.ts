@@ -1,14 +1,11 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-function getTransporter() {
-  if (!process.env.SMTP_HOST) return null;
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: false,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
+function getResend() {
+  if (!process.env.RESEND_API_KEY) return null;
+  return new Resend(process.env.RESEND_API_KEY);
 }
+
+const FROM = process.env.RESEND_FROM ?? "Bokningssystem <onboarding@resend.dev>";
 
 function fmt(isoStr: string) {
   return new Date(isoStr).toLocaleDateString("sv-SE", {
@@ -79,8 +76,8 @@ export async function sendGuestConfirmation(params: {
   bookingId: string;
   addonToken: string;
 }) {
-  const t = getTransporter();
-  if (!t) return;
+  const r = getResend();
+  if (!r) return;
 
   const base = process.env.NEXTAUTH_URL ?? "";
   const url = (action: string) =>
@@ -148,8 +145,8 @@ export async function sendGuestConfirmation(params: {
     <tr><td class="d-foot c-lgray" bgcolor="#060810" style="background-color:#060810;padding:16px 28px;text-align:center;font-size:12px;color:#4b5563;border-top:1px solid #1e293b">Har du frågor? Svara på detta mail.</td></tr>
   `);
 
-  await t.sendMail({
-    from: `"Bokningssystem" <${process.env.SMTP_USER}>`,
+  await r.emails.send({
+    from: FROM,
     to: params.guestEmail,
     subject: `Bokningsbekräftelse — ${params.propertyName} ${fmt(params.startDate)}`,
     html,
@@ -171,9 +168,9 @@ export async function sendOwnerNotification(params: {
   notes: string | null;
   bookedBy: string;
 }) {
-  const t = getTransporter();
+  const r = getResend();
   const ownerEmail = process.env.OWNER_EMAIL;
-  if (!t || !ownerEmail) return;
+  if (!r || !ownerEmail) return;
 
   const extras = [params.cleaning && "Städning", params.bedLinen && "Lakan"]
     .filter(Boolean).join(", ") || "Inga";
@@ -204,8 +201,8 @@ export async function sendOwnerNotification(params: {
     <tr><td bgcolor="#060810" style="padding:14px 28px;text-align:center;font-size:12px;color:#4b5563">Bokningssystem</td></tr>
   `);
 
-  await t.sendMail({
-    from: `"Bokningssystem" <${process.env.SMTP_USER}>`,
+  await r.emails.send({
+    from: FROM,
     to: ownerEmail,
     subject: `Ny bokning: ${params.propertyName} — ${params.guestName ?? "okänd gäst"}`,
     html,
@@ -225,9 +222,9 @@ export async function sendCaretakerReminder(checkins: Array<{
   bedLinen: boolean;
   notes: string | null;
 }>) {
-  const t = getTransporter();
+  const r = getResend();
   const caretakerEmail = process.env.CARETAKER_EMAIL;
-  if (!t || !caretakerEmail || checkins.length === 0) return;
+  if (!r || !caretakerEmail || checkins.length === 0) return;
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -266,8 +263,8 @@ export async function sendCaretakerReminder(checkins: Array<{
     </td></tr>
   `);
 
-  await t.sendMail({
-    from: `"Bokningssystem" <${process.env.SMTP_USER}>`,
+  await r.emails.send({
+    from: FROM,
     to: caretakerEmail,
     subject: `Incheckningar imorgon ${dateStr} — ${checkins.length} stuga${checkins.length !== 1 ? "r" : ""}`,
     html,
