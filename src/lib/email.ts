@@ -28,8 +28,11 @@ function baseHtml(content: string) {
   @media screen and (max-width:600px){
     .outer{padding:0!important}
     .wrap{width:100%!important;border-radius:0!important}
-    .hdr{padding:20px 16px 16px!important}
+    .hdr{padding:20px 16px 16px!important;background-color:#1a2744!important}
     .bdy{padding:16px!important}
+    .hdr-title{color:#ffffff!important;-webkit-text-fill-color:#ffffff!important}
+    .hdr-sub{color:#93c5fd!important;-webkit-text-fill-color:#93c5fd!important}
+    .hdr-label{color:#60a5fa!important;-webkit-text-fill-color:#60a5fa!important}
   }
   /* Gmail iOS: åsidosätt Gmails auto-konvertering */
   [data-ogsc] .d-bg   { background-color:#0e1320 !important }
@@ -104,9 +107,9 @@ export async function sendGuestConfirmation(params: {
 
   const html = baseHtml(`
     <tr><td class="hdr d-hdr" bgcolor="#1a2744" style="padding:28px 28px 22px;background-color:#1a2744;border-radius:16px 16px 0 0">
-      <p class="c-blue" style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#60a5fa">Bokningsbekräftelse</p>
-      <p class="c-wht" style="margin:0 0 6px;font-size:32px;font-weight:800;color:#ffffff;line-height:1.1">Välkommen!</p>
-      <p class="c-lblue" style="margin:0;font-size:15px;color:#93c5fd">${params.guestName} — ${params.propertyName}</p>
+      <p class="c-blue hdr-label" style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#60a5fa">Bokningsbekräftelse</p>
+      <p class="c-wht hdr-title" style="margin:0 0 6px;font-size:32px;font-weight:800;color:#ffffff;line-height:1.1">Välkommen!</p>
+      <p class="c-lblue hdr-sub" style="margin:0;font-size:15px;color:#93c5fd">${params.guestName} — ${params.propertyName}</p>
     </td></tr>
     <tr><td class="bdy d-bg" bgcolor="#0e1320" style="padding:24px 28px;background-color:#0e1320">
       <p class="c-gray" style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6">Vi ser fram emot ditt besök! Här är en sammanfattning av din bokning.</p>
