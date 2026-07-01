@@ -16,6 +16,8 @@ const ROLE_LABELS: Record<Role, string> = {
   ADMIN: "Förvaltare",
   OWNER: "Ägare",
   PARTNER: "Partner",
+  CARETAKER: "Fastighetsskötare",
+  CLEANER: "Städerska",
 };
 
 export function AdminUserList({ users: initial, currentUserId }: { users: UserDTO[]; currentUserId: string }) {
@@ -59,8 +61,8 @@ export function AdminUserList({ users: initial, currentUserId }: { users: UserDT
                 <span
                   className="rounded-full px-2 py-0.5 text-xs font-medium"
                   style={{
-                    background: u.role === "ADMIN" ? "rgba(99,102,241,0.2)" : u.role === "OWNER" ? "rgba(34,197,94,0.15)" : "rgba(249,115,22,0.15)",
-                    color: u.role === "ADMIN" ? "#818cf8" : u.role === "OWNER" ? "#4ade80" : "#fb923c",
+                    background: u.role === "ADMIN" ? "rgba(99,102,241,0.2)" : u.role === "OWNER" ? "rgba(34,197,94,0.15)" : u.role === "CARETAKER" ? "rgba(56,189,248,0.15)" : u.role === "CLEANER" ? "rgba(244,114,182,0.15)" : "rgba(249,115,22,0.15)",
+                    color: u.role === "ADMIN" ? "#818cf8" : u.role === "OWNER" ? "#4ade80" : u.role === "CARETAKER" ? "#38bdf8" : u.role === "CLEANER" ? "#f472b6" : "#fb923c",
                   }}
                 >
                   {ROLE_LABELS[u.role]}
@@ -166,6 +168,8 @@ function EditUserRow({
             <option value="ADMIN">Förvaltare</option>
             <option value="OWNER">Ägare</option>
             <option value="PARTNER">Partner</option>
+            <option value="CARETAKER">Fastighetsskötare</option>
+            <option value="CLEANER">Städerska</option>
           </select>
         </div>
       </div>
@@ -258,6 +262,8 @@ function AddUserForm({ onCreated, onCancel }: { onCreated: (u: UserDTO) => void;
             <option value="ADMIN">Förvaltare</option>
             <option value="OWNER">Ägare</option>
             <option value="PARTNER">Partner</option>
+            <option value="CARETAKER">Fastighetsskötare</option>
+            <option value="CLEANER">Städerska</option>
           </select>
         </div>
       </div>

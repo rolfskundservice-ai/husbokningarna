@@ -22,6 +22,8 @@ enum Role {
   ADMIN
   OWNER
   PARTNER
+  CARETAKER
+  CLEANER
 }
 
 model User {

@@ -62,6 +62,8 @@ function roleLabel(role: string) {
     case "ADMIN": return "Förvaltare";
     case "OWNER": return "Ägare";
     case "PARTNER": return "Partner";
+    case "CARETAKER": return "Fastighetsskötare";
+    case "CLEANER": return "Städerska";
     default: return role;
   }
 }
