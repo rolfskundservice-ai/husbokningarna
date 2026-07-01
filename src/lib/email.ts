@@ -31,15 +31,25 @@ function baseHtml(content: string) {
     .hdr{padding:20px 16px 16px!important}
     .bdy{padding:16px!important}
   }
-  @media (prefers-color-scheme:dark){
-    .gdark-bg{background-color:#0e1320 !important}
-    .gdark-hdr{background-color:#1a2744 !important}
-    .gdark-card{background-color:#111827 !important}
-    .gdark-btn-b{background-color:#2563eb !important}
-    .gdark-btn-g{background-color:#059669 !important}
-    .gdark-btn-p{background-color:#7c3aed !important}
-    .gdark-addon{background-color:#13124a !important}
-  }
+  /* Gmail iOS: åsidosätt Gmails auto-konvertering */
+  [data-ogsc] .d-bg   { background-color:#0e1320 !important }
+  [data-ogsc] .d-hdr  { background-color:#1a2744 !important }
+  [data-ogsc] .d-card { background-color:#111827 !important }
+  [data-ogsc] .d-addon{ background-color:#13124a !important }
+  [data-ogsc] .d-foot { background-color:#060810 !important }
+  [data-ogsc] .d-wrap { background-color:#0e1320 !important }
+  [data-ogsc] .c-wht  { color:#ffffff !important }
+  [data-ogsc] .c-blue { color:#60a5fa !important }
+  [data-ogsc] .c-lblue{ color:#93c5fd !important }
+  [data-ogsc] .c-gray { color:#94a3b8 !important }
+  [data-ogsc] .c-lgray{ color:#4b5563 !important }
+  [data-ogsc] .c-green{ color:#4ade80 !important }
+  [data-ogsc] .c-red  { color:#f87171 !important }
+  [data-ogsc] .c-pale { color:#e2e8f0 !important }
+  [data-ogsc] .c-indig{ color:#a5b4fc !important }
+  [data-ogsc] .btn-b  { background-color:#2563eb !important; color:#ffffff !important }
+  [data-ogsc] .btn-g  { background-color:#059669 !important; color:#ffffff !important }
+  [data-ogsc] .btn-p  { background-color:#7c3aed !important; color:#ffffff !important }
 </style></head>
 <body bgcolor="#0a0d14" style="margin:0;padding:0;background:#0a0d14">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td class="outer" align="center" bgcolor="#0a0d14" style="padding:24px 12px">
@@ -85,54 +95,54 @@ export async function sendGuestConfirmation(params: {
 
   const addBtns = [
     !params.numberOfBoats &&
-      `<tr><td style="padding:0 0 10px 0"><a href="${url("add-boat")}" class="gdark-btn-b" style="${btnStyle("#2563eb")}">🛥 Lägg till båt &nbsp;<span style="font-weight:400;font-size:13px;color:#ffffff">1 750 kr</span></a></td></tr>`,
+      `<tr><td style="padding:0 0 10px 0"><a href="${url("add-boat")}" class="btn-b" style="${btnStyle("#2563eb")}">🛥 Lägg till båt &nbsp;<span style="font-weight:400;font-size:13px;color:#ffffff">1 750 kr</span></a></td></tr>`,
     !params.cleaning &&
-      `<tr><td style="padding:0 0 10px 0"><a href="${url("add-cleaning")}" class="gdark-btn-g" style="${btnStyle("#059669")}">🧹 Beställ städning &nbsp;<span style="font-weight:400;font-size:13px;color:#ffffff">2 200 kr</span></a></td></tr>`,
+      `<tr><td style="padding:0 0 10px 0"><a href="${url("add-cleaning")}" class="btn-g" style="${btnStyle("#059669")}">🧹 Beställ städning &nbsp;<span style="font-weight:400;font-size:13px;color:#ffffff">2 200 kr</span></a></td></tr>`,
     !params.bedLinen &&
-      `<tr><td style="padding:0"><a href="${url("add-linen")}" class="gdark-btn-p" style="${btnStyle("#7c3aed")}">🛏 Beställ lakan &nbsp;<span style="font-weight:400;font-size:13px;color:#ffffff">220 kr</span></a></td></tr>`,
+      `<tr><td style="padding:0"><a href="${url("add-linen")}" class="btn-p" style="${btnStyle("#7c3aed")}">🛏 Beställ lakan &nbsp;<span style="font-weight:400;font-size:13px;color:#ffffff">220 kr</span></a></td></tr>`,
   ].filter(Boolean).join("\n");
 
   const html = baseHtml(`
-    <tr><td class="hdr gdark-hdr" bgcolor="#1a2744" style="padding:28px 28px 22px;background-color:#1a2744;border-radius:16px 16px 0 0">
-      <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#60a5fa">Bokningsbekräftelse</p>
-      <p style="margin:0 0 6px;font-size:32px;font-weight:800;color:#ffffff;line-height:1.1">Välkommen!</p>
-      <p style="margin:0;font-size:15px;color:#93c5fd">${params.guestName} — ${params.propertyName}</p>
+    <tr><td class="hdr d-hdr" bgcolor="#1a2744" style="padding:28px 28px 22px;background-color:#1a2744;border-radius:16px 16px 0 0">
+      <p class="c-blue" style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#60a5fa">Bokningsbekräftelse</p>
+      <p class="c-wht" style="margin:0 0 6px;font-size:32px;font-weight:800;color:#ffffff;line-height:1.1">Välkommen!</p>
+      <p class="c-lblue" style="margin:0;font-size:15px;color:#93c5fd">${params.guestName} — ${params.propertyName}</p>
     </td></tr>
-    <tr><td class="bdy gdark-bg" bgcolor="#0e1320" style="padding:24px 28px;background-color:#0e1320">
-      <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6">Vi ser fram emot ditt besök! Här är en sammanfattning av din bokning.</p>
+    <tr><td class="bdy d-bg" bgcolor="#0e1320" style="padding:24px 28px;background-color:#0e1320">
+      <p class="c-gray" style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6">Vi ser fram emot ditt besök! Här är en sammanfattning av din bokning.</p>
 
       <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#111827" style="border-radius:10px;margin-bottom:12px">
-        <tr><td class="gdark-card" style="padding:12px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;width:42%;background-color:#111827">📍 Stuga</td>
-            <td class="gdark-card" style="padding:12px 16px;font-size:14px;font-weight:600;color:#ffffff;border-bottom:1px solid #1e293b;background-color:#111827">${params.propertyName}</td></tr>
-        <tr><td class="gdark-card" style="padding:12px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;background-color:#111827">📅 Incheckning</td>
-            <td class="gdark-card" style="padding:12px 16px;font-size:14px;font-weight:600;color:#4ade80;border-bottom:1px solid #1e293b;background-color:#111827">${fmt(params.startDate)}</td></tr>
-        <tr><td class="gdark-card" style="padding:12px 16px;font-size:13px;color:#94a3b8;background-color:#111827">📅 Utcheckning</td>
-            <td class="gdark-card" style="padding:12px 16px;font-size:14px;font-weight:600;color:#f87171;background-color:#111827">${fmt(params.endDate)}</td></tr>
+        <tr><td class="d-card c-gray" style="padding:12px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;width:42%;background-color:#111827">📍 Stuga</td>
+            <td class="d-card c-wht" style="padding:12px 16px;font-size:14px;font-weight:600;color:#ffffff;border-bottom:1px solid #1e293b;background-color:#111827">${params.propertyName}</td></tr>
+        <tr><td class="d-card c-gray" style="padding:12px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;background-color:#111827">📅 Incheckning</td>
+            <td class="d-card c-green" style="padding:12px 16px;font-size:14px;font-weight:600;color:#4ade80;border-bottom:1px solid #1e293b;background-color:#111827">${fmt(params.startDate)}</td></tr>
+        <tr><td class="d-card c-gray" style="padding:12px 16px;font-size:13px;color:#94a3b8;background-color:#111827">📅 Utcheckning</td>
+            <td class="d-card c-red" style="padding:12px 16px;font-size:14px;font-weight:600;color:#f87171;background-color:#111827">${fmt(params.endDate)}</td></tr>
       </table>
 
       <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#111827" style="border-radius:10px;margin-bottom:24px">
-        <tr><td class="gdark-card" style="padding:11px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;width:42%;background-color:#111827">👤 Antal personer</td>
-            <td class="gdark-card" style="padding:11px 16px;font-size:14px;color:#e2e8f0;border-bottom:1px solid #1e293b;background-color:#111827">${params.numberOfPersons ?? "–"}</td></tr>
-        <tr><td class="gdark-card" style="padding:11px 16px;font-size:13px;color:#94a3b8${params.notes ? ";border-bottom:1px solid #1e293b" : ""};background-color:#111827">🛥 Tillval</td>
-            <td class="gdark-card" style="padding:11px 16px;font-size:14px;color:#e2e8f0${params.notes ? ";border-bottom:1px solid #1e293b" : ""};background-color:#111827">${extras}</td></tr>
-        ${params.notes ? `<tr><td class="gdark-card" style="padding:11px 16px;font-size:13px;color:#94a3b8;background-color:#111827">📝 Övrigt</td>
-            <td class="gdark-card" style="padding:11px 16px;font-size:14px;color:#e2e8f0;background-color:#111827">${params.notes}</td></tr>` : ""}
+        <tr><td class="d-card c-gray" style="padding:11px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;width:42%;background-color:#111827">👤 Antal personer</td>
+            <td class="d-card c-pale" style="padding:11px 16px;font-size:14px;color:#e2e8f0;border-bottom:1px solid #1e293b;background-color:#111827">${params.numberOfPersons ?? "–"}</td></tr>
+        <tr><td class="d-card c-gray" style="padding:11px 16px;font-size:13px;color:#94a3b8${params.notes ? ";border-bottom:1px solid #1e293b" : ""};background-color:#111827">🛥 Tillval</td>
+            <td class="d-card c-pale" style="padding:11px 16px;font-size:14px;color:#e2e8f0${params.notes ? ";border-bottom:1px solid #1e293b" : ""};background-color:#111827">${extras}</td></tr>
+        ${params.notes ? `<tr><td class="d-card c-gray" style="padding:11px 16px;font-size:13px;color:#94a3b8;background-color:#111827">📝 Övrigt</td>
+            <td class="d-card c-pale" style="padding:11px 16px;font-size:14px;color:#e2e8f0;background-color:#111827">${params.notes}</td></tr>` : ""}
       </table>
 
       ${addBtns ? `
       <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#13124a" style="border-radius:10px;border:1px solid #312e81">
-        <tr><td class="gdark-addon" style="padding:18px 20px 10px;background-color:#13124a">
-          <p style="margin:0 0 14px;font-size:11px;font-weight:700;color:#a5b4fc;letter-spacing:.08em;text-transform:uppercase">Vill du lägga till något?</p>
+        <tr><td class="d-addon" style="padding:18px 20px 10px;background-color:#13124a">
+          <p class="c-indig" style="margin:0 0 14px;font-size:11px;font-weight:700;color:#a5b4fc;letter-spacing:.08em;text-transform:uppercase">Vill du lägga till något?</p>
           <table width="100%" cellpadding="0" cellspacing="0">${addBtns}</table>
         </td></tr>
       </table>
       ` : `
       <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#052e16" style="border-radius:10px;border:1px solid #166534">
-        <tr><td style="padding:14px;text-align:center;font-size:13px;color:#4ade80">✓ Alla tillval är redan bokade</td></tr>
+        <tr><td class="c-green" style="padding:14px;text-align:center;font-size:13px;color:#4ade80">✓ Alla tillval är redan bokade</td></tr>
       </table>
       `}
     </td></tr>
-    <tr><td bgcolor="#060810" style="background-color:#060810;padding:16px 28px;text-align:center;font-size:12px;color:#4b5563;border-top:1px solid #1e293b">Har du frågor? Svara på detta mail.</td></tr>
+    <tr><td class="d-foot c-lgray" bgcolor="#060810" style="background-color:#060810;padding:16px 28px;text-align:center;font-size:12px;color:#4b5563;border-top:1px solid #1e293b">Har du frågor? Svara på detta mail.</td></tr>
   `);
 
   await t.sendMail({
