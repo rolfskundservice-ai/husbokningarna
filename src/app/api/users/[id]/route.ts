@@ -10,6 +10,7 @@ const patchSchema = z.object({
   name: z.string().min(1).optional(),
   role: z.nativeEnum(Role).optional(),
   password: z.string().min(6).optional(),
+  phone: z.string().optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -24,16 +25,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, role, password } = parsed.data;
+  const { name, role, password, phone } = parsed.data;
   const data: Record<string, unknown> = {};
   if (name) data.name = name;
   if (role) data.role = role;
   if (password) data.passwordHash = await bcrypt.hash(password, 12);
+  if (phone !== undefined) data.phone = phone || null;
 
   const user = await prisma.user.update({
     where: { id: params.id },
     data,
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    select: { id: true, name: true, email: true, role: true, phone: true, createdAt: true },
   });
 
   return NextResponse.json(user);

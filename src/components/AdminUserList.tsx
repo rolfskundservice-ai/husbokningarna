@@ -8,6 +8,7 @@ interface UserDTO {
   name: string;
   email: string;
   role: Role;
+  phone: string | null;
   createdAt: string;
 }
 
@@ -68,7 +69,7 @@ export function AdminUserList({ users: initial, currentUserId }: { users: UserDT
                   <span className="text-xs text-gray-600">(du)</span>
                 )}
               </div>
-              <div className="text-xs text-gray-500 mt-0.5">{u.email}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{u.email}{u.phone && <span className="ml-2 text-gray-600">· {u.phone}</span>}</div>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -122,6 +123,7 @@ function EditUserRow({
 }) {
   const [name, setName] = useState(user.name);
   const [role, setRole] = useState<Role>(user.role);
+  const [phone, setPhone] = useState(user.phone ?? "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +131,7 @@ function EditUserRow({
   async function handleSave() {
     setLoading(true);
     setError(null);
-    const body: Record<string, string> = { name, role };
+    const body: Record<string, string> = { name, role, phone };
     if (password) body.password = password;
 
     const res = await fetch(`/api/users/${user.id}`, {
@@ -168,6 +170,16 @@ function EditUserRow({
         </div>
       </div>
       <div>
+        <label className="mb-1 block text-xs text-gray-400">Telefonnummer <span className="text-gray-600">(valfritt)</span></label>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="input-dark w-full"
+          placeholder="+46701234567"
+        />
+      </div>
+      <div>
         <label className="mb-1 block text-xs text-gray-400">Nytt lösenord <span className="text-gray-600">(lämna tomt för att behålla)</span></label>
         <input
           type="password"
@@ -202,6 +214,7 @@ function EditUserRow({
 function AddUserForm({ onCreated, onCancel }: { onCreated: (u: UserDTO) => void; onCancel: () => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("PARTNER");
   const [loading, setLoading] = useState(false);
@@ -215,7 +228,7 @@ function AddUserForm({ onCreated, onCancel }: { onCreated: (u: UserDTO) => void;
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, role }),
+      body: JSON.stringify({ name, email, password, role, phone: phone || undefined }),
     });
     setLoading(false);
 
@@ -251,6 +264,10 @@ function AddUserForm({ onCreated, onCancel }: { onCreated: (u: UserDTO) => void;
       <div>
         <label className="mb-1 block text-xs text-gray-400">E-post</label>
         <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-dark w-full" />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs text-gray-400">Telefonnummer <span className="text-gray-600">(valfritt)</span></label>
+        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-dark w-full" placeholder="+46701234567" />
       </div>
       <div>
         <label className="mb-1 block text-xs text-gray-400">Lösenord</label>

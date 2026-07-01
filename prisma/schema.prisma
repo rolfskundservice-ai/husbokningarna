@@ -30,6 +30,7 @@ model User {
   email         String   @unique
   passwordHash  String
   role          Role     @default(PARTNER)
+  phone         String?
   createdAt     DateTime @default(now())
 
   bookings      Booking[]
