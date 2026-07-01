@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { BOAT_TYPES, BoatCounts, BoatId, boatPrice, boatSummary } from "./boats";
+import { BOAT_TYPES, BoatCounts, BoatId, boatPrice, boatSummary, formatBoatNumbers } from "./boats";
 
 function getResend() {
   if (!process.env.RESEND_API_KEY) return null;
@@ -71,6 +71,7 @@ export async function sendGuestConfirmation(params: {
   endDate: string;
   numberOfPersons: number | null;
   boats: BoatCounts;
+  boatNumbers: number[];
   nights: number;
   cleaning: boolean;
   bedLinen: boolean;
@@ -132,6 +133,10 @@ export async function sendGuestConfirmation(params: {
       <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#111827" style="border-radius:10px;margin-bottom:24px">
         <tr><td class="d-card c-gray" style="padding:11px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;width:42%;background-color:#111827">👤 Antal personer</td>
             <td class="d-card c-pale" style="padding:11px 16px;font-size:14px;color:#e2e8f0;border-bottom:1px solid #1e293b;background-color:#111827">${params.numberOfPersons ?? "–"}</td></tr>
+        ${hasBoats ? `<tr><td class="d-card c-gray" style="padding:11px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;background-color:#111827">🚤 Din/dina båtar</td>
+            <td class="d-card c-blue" style="padding:11px 16px;font-size:14px;font-weight:700;color:#60a5fa;border-bottom:1px solid #1e293b;background-color:#111827">${formatBoatNumbers(params.boatNumbers)}</td></tr>
+        <tr><td class="d-card c-gray" style="padding:11px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;background-color:#111827">🔧 Motorstyrka</td>
+            <td class="d-card c-pale" style="padding:11px 16px;font-size:14px;color:#e2e8f0;border-bottom:1px solid #1e293b;background-color:#111827">${boatLines}</td></tr>` : ""}
         <tr><td class="d-card c-gray" style="padding:11px 16px;font-size:13px;color:#94a3b8${params.notes ? ";border-bottom:1px solid #1e293b" : ""};background-color:#111827">🛥 Tillval</td>
             <td class="d-card c-pale" style="padding:11px 16px;font-size:14px;color:#e2e8f0${params.notes ? ";border-bottom:1px solid #1e293b" : ""};background-color:#111827">${extras}</td></tr>
         ${params.notes ? `<tr><td class="d-card c-gray" style="padding:11px 16px;font-size:13px;color:#94a3b8;background-color:#111827">📝 Övrigt</td>
@@ -172,6 +177,7 @@ export async function sendOwnerNotification(params: {
   guestEmail: string | null;
   numberOfPersons: number | null;
   boats: BoatCounts;
+  boatNumbers: number[];
   nights: number;
   cleaning: boolean;
   bedLinen: boolean;
@@ -204,6 +210,7 @@ export async function sendOwnerNotification(params: {
           ["Incheckning", fmt(params.startDate)],
           ["Utcheckning", fmt(params.endDate)],
           ["Antal personer", String(params.numberOfPersons ?? "–")],
+          ...(params.boatNumbers.length > 0 ? [["Båtnummer", formatBoatNumbers(params.boatNumbers)]] : []),
           ["Båtar", boatStr],
           ["Tillval", extras],
           ...(params.notes ? [["Anteckning", params.notes]] : []),

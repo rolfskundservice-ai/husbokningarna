@@ -92,6 +92,7 @@ model Booking {
   boat99hp        Int      @default(0)
   boat20hp        Int      @default(0)
   boat25hp        Int      @default(0)
+  boatNumbers     String   @default("") // t.ex. "1,5,7" — tilldelade båtnummer
   cleaning        Boolean  @default(false)
   bedLinen        Boolean  @default(false)
   guestEmail      String?

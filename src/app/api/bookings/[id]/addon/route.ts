@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { BOAT_TYPES, boatPrice, BoatId } from "@/lib/boats";
+import { BOAT_TYPES, boatPrice, BoatId, assignBoatNumbers, parseBoatNumbers, formatBoatNumbers } from "@/lib/boats";
 import { BookingStatus } from "@prisma/client";
 
 function page(content: string) {
@@ -87,7 +87,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
           startDate: { lt: booking.endDate },
           endDate: { gt: booking.startDate },
         },
-        select: { boat6hp: true, boat99hp: true, boat20hp: true, boat25hp: true },
+        select: { boat6hp: true, boat99hp: true, boat20hp: true, boat25hp: true, boatNumbers: true },
       });
 
       const used = {
@@ -104,9 +104,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         boat25hp: Math.min(parseInt(searchParams.get("boat25hp") || "0"), 1 - used.boat25hp),
       };
 
+      // Tilldela båtnummer
+      const takenNumbers = overlap.flatMap(b => parseBoatNumbers(b.boatNumbers ?? ""));
+      const assignedNumbers = assignBoatNumbers(newCounts, takenNumbers);
+
       await prisma.booking.update({
         where: { id: booking.id },
-        data: newCounts,
+        data: { ...newCounts, boatNumbers: assignedNumbers.join(",") },
       });
 
       const lines = BOAT_TYPES
@@ -114,7 +118,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         .map(t => `${newCounts[t.id as BoatId]}× ${t.label} (${boatPrice(t.weekPrice, nights).toLocaleString("sv-SE")} kr)`)
         .join(", ");
 
-      return successPage(`Dina båtar är bokade: ${lines || "inga"}<br>Välkommen till ${booking.property.name}!`);
+      const numStr = formatBoatNumbers(assignedNumbers);
+
+      return successPage(`Dina tilldelade båtar: <strong style="color:#60a5fa">${numStr}</strong><br>${lines || ""}<br>Välkommen till ${booking.property.name}!`);
     }
 
     // Annars → visa formulär

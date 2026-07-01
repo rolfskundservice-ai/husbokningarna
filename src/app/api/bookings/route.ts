@@ -6,7 +6,7 @@ import { z } from "zod";
 import { BookingSource, BookingStatus } from "@prisma/client";
 import { sendGuestConfirmation, sendOwnerNotification } from "@/lib/email";
 import crypto from "crypto";
-import { totalBoats } from "@/lib/boats";
+import { totalBoats, assignBoatNumbers, parseBoatNumbers } from "@/lib/boats";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -121,17 +121,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Perioden krockar med en befintlig bokning" }, { status: 409 });
   }
 
-  // Kolla båttillgänglighet globalt (alla stugor delar på båtarna)
-  if (boat6hp || boat99hp || boat20hp || boat25hp) {
-    const overlapBookings = await prisma.booking.findMany({
-      where: {
-        status: BookingStatus.CONFIRMED,
-        startDate: { lt: end },
-        endDate: { gt: start },
-      },
-      select: { boat6hp: true, boat99hp: true, boat20hp: true, boat25hp: true },
-    });
+  // Kolla båttillgänglighet globalt och samla tagna båtnummer
+  const overlapBookings = await prisma.booking.findMany({
+    where: {
+      status: BookingStatus.CONFIRMED,
+      startDate: { lt: end },
+      endDate: { gt: start },
+    },
+    select: { boat6hp: true, boat99hp: true, boat20hp: true, boat25hp: true, boatNumbers: true },
+  });
 
+  if (boat6hp || boat99hp || boat20hp || boat25hp) {
     const used6hp  = overlapBookings.reduce((s, b) => s + b.boat6hp,  0);
     const used99hp = overlapBookings.reduce((s, b) => s + b.boat99hp, 0);
     const used20hp = overlapBookings.reduce((s, b) => s + b.boat20hp, 0);
@@ -142,6 +142,11 @@ export async function POST(req: Request) {
     if (boat20hp > 2 - used20hp) return NextResponse.json({ error: `Bara ${2 - used20hp} st 20 hk-båtar tillgängliga` }, { status: 409 });
     if (boat25hp > 1 - used25hp) return NextResponse.json({ error: `Bara ${1 - used25hp} st 25 hk-båtar tillgängliga` }, { status: 409 });
   }
+
+  // Tilldela specifika båtnummer
+  const takenNumbers = overlapBookings.flatMap(b => parseBoatNumbers(b.boatNumbers));
+  const assignedNumbers = assignBoatNumbers({ boat6hp, boat99hp, boat20hp, boat25hp }, takenNumbers);
+  const boatNumbers = assignedNumbers.join(",");
 
   const addonToken = crypto.randomBytes(32).toString("hex");
 
@@ -156,6 +161,7 @@ export async function POST(req: Request) {
       notes: notes || null,
       numberOfPersons: numberOfPersons ?? null,
       boat6hp, boat99hp, boat20hp, boat25hp,
+      boatNumbers,
       cleaning: cleaning ?? false,
       bedLinen: bedLinen ?? false,
       addonToken,
@@ -178,6 +184,7 @@ export async function POST(req: Request) {
       guestEmail: guestEmail ?? null,
       numberOfPersons: numberOfPersons ?? null,
       boats,
+      boatNumbers: assignedNumbers,
       nights,
       cleaning: cleaning ?? false,
       bedLinen: bedLinen ?? false,
@@ -194,6 +201,7 @@ export async function POST(req: Request) {
         endDate: booking.endDate.toISOString(),
         numberOfPersons: numberOfPersons ?? null,
         boats,
+        boatNumbers: assignedNumbers,
         nights,
         cleaning: cleaning ?? false,
         bedLinen: bedLinen ?? false,
