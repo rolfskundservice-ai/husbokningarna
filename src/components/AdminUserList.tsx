@@ -164,6 +164,7 @@ function EditUserRow({
             value={role}
             onChange={(e) => setRole(e.target.value as Role)}
             className="input-dark w-full"
+            style={{ background: "#1a1a1a", color: "#fff" }}
           >
             <option value="ADMIN">Förvaltare</option>
             <option value="OWNER">Ägare</option>
@@ -177,6 +178,7 @@ function EditUserRow({
         <label className="mb-1 block text-xs text-gray-400">Telefonnummer <span className="text-gray-600">(valfritt)</span></label>
         <input
           type="tel"
+          autoComplete="off"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           className="input-dark w-full"
@@ -258,7 +260,8 @@ function AddUserForm({ onCreated, onCancel }: { onCreated: (u: UserDTO) => void;
         </div>
         <div>
           <label className="mb-1 block text-xs text-gray-400">Roll</label>
-          <select value={role} onChange={(e) => setRole(e.target.value as Role)} className="input-dark w-full">
+          <select value={role} onChange={(e) => setRole(e.target.value as Role)} className="input-dark w-full"
+            style={{ background: "#1a1a1a", color: "#fff" }}>
             <option value="ADMIN">Förvaltare</option>
             <option value="OWNER">Ägare</option>
             <option value="PARTNER">Partner</option>
@@ -269,15 +272,15 @@ function AddUserForm({ onCreated, onCancel }: { onCreated: (u: UserDTO) => void;
       </div>
       <div>
         <label className="mb-1 block text-xs text-gray-400">E-post</label>
-        <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-dark w-full" />
+        <input required type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-dark w-full" />
       </div>
       <div>
         <label className="mb-1 block text-xs text-gray-400">Telefonnummer <span className="text-gray-600">(valfritt)</span></label>
-        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-dark w-full" placeholder="+46701234567" />
+        <input type="tel" autoComplete="off" value={phone} onChange={(e) => setPhone(e.target.value)} className="input-dark w-full" placeholder="+46701234567" />
       </div>
       <div>
         <label className="mb-1 block text-xs text-gray-400">Lösenord</label>
-        <input required type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="input-dark w-full" placeholder="Minst 6 tecken" />
+        <input required type="password" autoComplete="new-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="input-dark w-full" placeholder="Minst 6 tecken" />
       </div>
       {error && <p className="text-xs text-red-400">{error}</p>}
       <div className="flex gap-2">
