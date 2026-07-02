@@ -69,7 +69,17 @@ export async function syncAirbnbCalendar(propertyId: string) {
 
   let synced = 0;
 
+  // Airbnb lägger automatiskt ett 1-dags-block för idag för att stoppa
+  // samma-dags-bokningar. Det ska inte visas i vårt system.
+  const todayMidnight = new Date(); todayMidnight.setHours(0, 0, 0, 0);
+  const oneDayMs = 86_400_000;
+
   for (const ev of incomingEvents) {
+    const isAutomaticTodayBlock =
+      ev.start.getTime() === todayMidnight.getTime() &&
+      ev.end.getTime() - ev.start.getTime() === oneDayMs;
+    if (isAutomaticTodayBlock) continue;
+
     const { numberOfPersons, phone, reservationCode } = parseAirbnbDescription(ev.description);
 
     const existing = await prisma.booking.findUnique({

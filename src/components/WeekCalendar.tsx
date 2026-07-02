@@ -124,7 +124,7 @@ function getDayStatus(date: Date, bookings: Booking[]): DayInfo {
   }
 
   if (isPast) return { status: "past", booking: null, isArrival: false, isDeparture: false, isCheckoutOnly: false, checkoutBooking: null };
-  if (isToday) return { status: "today", booking: null, isArrival: false, isDeparture: false, isCheckoutOnly: false, checkoutBooking: null };
+  // isToday används inte längre — idag visas som en vanlig tillgänglig dag
   return { status: "available", booking: null, isArrival: false, isDeparture: false, isCheckoutOnly: false, checkoutBooking: null };
 }
 
@@ -241,7 +241,6 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
           <LegendDot cls="day-available" label="Ledig" textColor="#6b7280" />
-          <LegendDot cls="day-today" label="Idag" textColor="#4ade80" />
           <LegendDot cls="day-booked-internal" label="Bokad (internt)" textColor="#93c5fd" />
           <LegendDot cls="day-booked-airbnb" label="Bokad (Airbnb)" textColor="#fdba74" />
           <LegendDot cls="day-selected" label="Markerat" textColor="#a5b4fc" />
