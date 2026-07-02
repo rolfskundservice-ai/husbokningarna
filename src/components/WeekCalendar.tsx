@@ -701,6 +701,9 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
   booking: Booking; onClose: () => void; onDeleted: () => void;
 }) {
   const [loading, setLoading] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
   async function handleDelete() {
     if (!confirm("Ta bort bokningen?")) return;
@@ -709,6 +712,19 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
     setLoading(false);
     if (res.ok) onDeleted();
     else { const d = await res.json(); alert(d.error || "Kunde inte ta bort"); }
+  }
+
+  async function handleSendEmail() {
+    if (!emailInput.includes("@")) { alert("Ange en giltig e-postadress"); return; }
+    setSending(true);
+    const res = await fetch(`/api/bookings/${booking.id}/send-guest-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: emailInput }),
+    });
+    setSending(false);
+    if (res.ok) { setSent(true); setEmailInput(""); }
+    else { const d = await res.json(); alert(d.error || "Kunde inte skicka mailet"); }
   }
 
   const start = new Date(booking.startDate);
@@ -757,7 +773,39 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
         )}
       </div>
 
-      <div className="mt-6 flex items-center justify-between">
+      {/* Skicka bokningsmail till gäst */}
+      <div className="mt-5 rounded-xl p-4" style={{ background: "rgba(37,99,235,0.08)", border: "1px solid rgba(37,99,235,0.2)" }}>
+        <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "#60a5fa" }}>
+          ✉️ Skicka bokningsmail till gäst
+        </p>
+        <p className="text-xs mb-3" style={{ color: "#6b7280" }}>
+          Gästen får bekräftelse med knappar för att boka båt, städning och lakan.
+        </p>
+        {sent ? (
+          <p className="text-sm font-semibold" style={{ color: "#4ade80" }}>✓ Mail skickat!</p>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={emailInput}
+              onChange={e => setEmailInput(e.target.value)}
+              placeholder="gast@exempel.se"
+              className="input-dark flex-1 text-sm"
+              onKeyDown={e => e.key === "Enter" && handleSendEmail()}
+            />
+            <button
+              onClick={handleSendEmail}
+              disabled={sending || !emailInput}
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 transition whitespace-nowrap"
+              style={{ background: "linear-gradient(135deg,#2563eb,#7c3aed)" }}
+            >
+              {sending ? "Skickar…" : "Skicka"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
         {booking.source !== "AIRBNB" ? (
           <button onClick={handleDelete} disabled={loading}
             className="text-sm text-red-500 hover:text-red-400 transition disabled:opacity-60">
