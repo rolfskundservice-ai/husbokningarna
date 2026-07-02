@@ -8,6 +8,7 @@ import { PropertySwitcher } from "@/components/PropertySwitcher";
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
+  if (session.user.role === "CARETAKER" || session.user.role === "CLEANER") redirect("/staff");
 
   const properties =
     session.user.role === "PARTNER"

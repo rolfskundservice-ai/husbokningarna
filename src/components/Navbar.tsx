@@ -13,12 +13,21 @@ export function Navbar() {
           <Link href="/dashboard" className="text-base font-semibold text-white">
             🏡 Stugbokning
           </Link>
-          <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition">
-            Kalender
-          </Link>
-          <Link href="/overview" className="text-sm text-gray-400 hover:text-white transition">
-            Översikt
-          </Link>
+          {session?.user?.role !== "CARETAKER" && session?.user?.role !== "CLEANER" && (
+            <>
+              <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition">
+                Kalender
+              </Link>
+              <Link href="/overview" className="text-sm text-gray-400 hover:text-white transition">
+                Översikt
+              </Link>
+            </>
+          )}
+          {(session?.user?.role === "CARETAKER" || session?.user?.role === "CLEANER") && (
+            <Link href="/staff" className="text-sm text-gray-400 hover:text-white transition">
+              Incheckningar
+            </Link>
+          )}
           {session?.user?.role === "ADMIN" && (
             <>
               <Link href="/admin/properties" className="text-sm text-gray-400 hover:text-white transition">

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { BOAT_TYPES, boatPrice, BoatId, assignBoatNumbers, parseBoatNumbers, formatBoatNumbers } from "@/lib/boats";
 import { BookingStatus } from "@prisma/client";
+import { sendAddonConfirmation } from "@/lib/email";
 
 function page(content: string) {
   return new Response(
@@ -120,6 +121,17 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
       const numStr = formatBoatNumbers(assignedNumbers);
 
+      if (booking.guestEmail) {
+        sendAddonConfirmation({
+          guestEmail: booking.guestEmail,
+          guestName: booking.guestName ?? "Gäst",
+          propertyName: booking.property.name,
+          startDate: booking.startDate.toISOString(),
+          what: numStr,
+          detail: lines || "–",
+        }).catch(() => {});
+      }
+
       return successPage(`Dina tilldelade båtar: <strong style="color:#60a5fa">${numStr}</strong><br>${lines || ""}<br>Välkommen till ${booking.property.name}!`);
     }
 
@@ -211,12 +223,32 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   if (action === "add-cleaning") {
     if (booking.cleaning) return successPage("Städning är redan beställd — ingen ändring gjordes.");
     await prisma.booking.update({ where: { id: booking.id }, data: { cleaning: true } });
+    if (booking.guestEmail) {
+      sendAddonConfirmation({
+        guestEmail: booking.guestEmail,
+        guestName: booking.guestName ?? "Gäst",
+        propertyName: booking.property.name,
+        startDate: booking.startDate.toISOString(),
+        what: "Städning",
+        detail: "2 200 kr — betalas vid ankomst eller enligt överenskommelse",
+      }).catch(() => {});
+    }
     return successPage(`Städning (2 200 kr) har beställts till din bokning på ${booking.property.name}!`);
   }
 
   if (action === "add-linen") {
     if (booking.bedLinen) return successPage("Lakan är redan beställt — ingen ändring gjordes.");
     await prisma.booking.update({ where: { id: booking.id }, data: { bedLinen: true } });
+    if (booking.guestEmail) {
+      sendAddonConfirmation({
+        guestEmail: booking.guestEmail,
+        guestName: booking.guestName ?? "Gäst",
+        propertyName: booking.property.name,
+        startDate: booking.startDate.toISOString(),
+        what: "Lakan",
+        detail: "220 kr — betalas vid ankomst eller enligt överenskommelse",
+      }).catch(() => {});
+    }
     return successPage(`Lakan (220 kr) har beställts till din bokning på ${booking.property.name}!`);
   }
 

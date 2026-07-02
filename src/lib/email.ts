@@ -295,6 +295,50 @@ export async function sendCaretakerReminder(checkins: Array<{
   });
 }
 
+// ── 4. Tillvalsbekräftelse till GÄST (efter att gäst lagt till via mail) ──────
+
+export async function sendAddonConfirmation(params: {
+  guestEmail: string;
+  guestName: string;
+  propertyName: string;
+  startDate: string;
+  what: string;       // t.ex. "Båt 5, Båt 6" eller "Städning" eller "Lakan"
+  detail: string;     // t.ex. motorstyrka + pris, eller fast pris
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const html = baseHtml(`
+    <tr><td class="hdr d-hdr" bgcolor="#1a2744" style="padding:28px 28px 22px;background-color:#1a2744;border-radius:16px 16px 0 0">
+      <p class="c-blue" style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#60a5fa">Tillval bekräftat</p>
+      <p class="c-wht" style="margin:0 0 6px;font-size:28px;font-weight:800;color:#ffffff;line-height:1.1">Klart!</p>
+      <p class="c-lblue" style="margin:0;font-size:15px;color:#93c5fd">${params.guestName} — ${params.propertyName}</p>
+    </td></tr>
+    <tr><td class="bdy d-bg" bgcolor="#0e1320" style="padding:24px 28px;background-color:#0e1320">
+      <p class="c-gray" style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6">
+        Ditt tillval har registrerats för din bokning som börjar ${fmt(params.startDate)}.
+      </p>
+      <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#111827" style="border-radius:10px;margin-bottom:24px">
+        <tr><td class="d-card c-gray" style="padding:14px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;width:42%;background-color:#111827">📍 Stuga</td>
+            <td class="d-card c-wht" style="padding:14px 16px;font-size:14px;font-weight:600;color:#ffffff;border-bottom:1px solid #1e293b;background-color:#111827">${params.propertyName}</td></tr>
+        <tr><td class="d-card c-gray" style="padding:14px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;background-color:#111827">✅ Tillagt</td>
+            <td class="d-card c-blue" style="padding:14px 16px;font-size:14px;font-weight:700;color:#60a5fa;border-bottom:1px solid #1e293b;background-color:#111827">${params.what}</td></tr>
+        <tr><td class="d-card c-gray" style="padding:14px 16px;font-size:13px;color:#94a3b8;background-color:#111827">💰 Detaljer</td>
+            <td class="d-card c-pale" style="padding:14px 16px;font-size:14px;color:#e2e8f0;background-color:#111827">${params.detail}</td></tr>
+      </table>
+      <p class="c-gray" style="margin:0;font-size:13px;color:#94a3b8;line-height:1.6">Har du frågor? Svara på detta mail.</p>
+    </td></tr>
+    <tr><td class="d-foot c-lgray" bgcolor="#060810" style="background-color:#060810;padding:16px 28px;text-align:center;font-size:12px;color:#4b5563;border-top:1px solid #1e293b">Bokningssystem</td></tr>
+  `);
+
+  await r.emails.send({
+    from: FROM,
+    to: params.guestEmail,
+    subject: `Tillval bekräftat — ${params.what}`,
+    html,
+  });
+}
+
 // Bakåtkompatibilitet
 export async function sendBookingNotification(_params: {
   propertyName: string; weekLabel: string; guestName: string | null;
