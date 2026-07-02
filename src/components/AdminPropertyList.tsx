@@ -110,8 +110,11 @@ function PropertyRow({
         <p className="mb-3 text-sm text-gray-500">{property.description}</p>
       )}
 
-      <label className="mb-1 block text-sm font-medium text-gray-400">Airbnb iCal-URL</label>
-      <div className="flex flex-wrap gap-2">
+      {/* Import från Airbnb */}
+      <label className="mb-1 block text-sm font-medium text-gray-400">
+        Airbnb → Systemet <span className="text-gray-600 font-normal">(klistra in iCal-länk från Airbnb)</span>
+      </label>
+      <div className="flex flex-wrap gap-2 mb-3">
         <input
           type="url"
           value={url}
@@ -136,11 +139,52 @@ function PropertyRow({
           {syncing ? "Synkar..." : "Synka nu"}
         </button>
       </div>
-      <p className="mt-2 text-xs text-gray-600">
+      <p className="mb-4 text-xs text-gray-600">
         {property.lastSyncedAt
           ? `Senast synkad: ${new Date(property.lastSyncedAt).toLocaleString("sv-SE")}`
           : "Aldrig synkad"}
       </p>
+
+      {/* Export till Airbnb */}
+      <label className="mb-1 block text-sm font-medium text-gray-400">
+        Systemet → Airbnb <span className="text-gray-600 font-normal">(lägg till denna länk i Airbnb)</span>
+      </label>
+      <ExportUrlRow propertyId={property.id} />
+    </div>
+  );
+}
+
+function ExportUrlRow({ propertyId }: { propertyId: string }) {
+  const [copied, setCopied] = useState(false);
+  const base = typeof window !== "undefined" ? window.location.origin : "https://husbokningarnas.vercel.app";
+  const exportUrl = `${base}/api/ical/${propertyId}`;
+
+  function copy() {
+    navigator.clipboard.writeText(exportUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div className="flex gap-2 items-center">
+      <input
+        readOnly
+        value={exportUrl}
+        className="input-dark min-w-0 flex-1 text-xs text-gray-400 cursor-text"
+        onFocus={e => e.target.select()}
+      />
+      <button
+        onClick={copy}
+        className="rounded-lg px-3 py-2 text-sm font-medium transition whitespace-nowrap"
+        style={{
+          background: copied ? "rgba(34,197,94,0.15)" : "#1c1c1c",
+          border: copied ? "1px solid rgba(34,197,94,0.4)" : "1px solid rgba(255,255,255,0.12)",
+          color: copied ? "#4ade80" : "#9ca3af",
+        }}
+      >
+        {copied ? "✓ Kopierad!" : "Kopiera"}
+      </button>
     </div>
   );
 }
