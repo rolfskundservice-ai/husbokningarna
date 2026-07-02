@@ -339,6 +339,59 @@ export async function sendAddonConfirmation(params: {
   });
 }
 
+// ── 5. Airbnb-synk notis till ÄGARE ─────────────────────────────────────────
+
+export async function sendAirbnbSyncNotification(params: {
+  propertyName: string;
+  startDate: string;
+  endDate: string;
+  guestName: string;
+  numberOfPersons: number | null;
+  phone: string | null;
+  reservationCode: string | null;
+}) {
+  const r = getResend();
+  const ownerEmail = process.env.OWNER_EMAIL;
+  if (!r || !ownerEmail) return;
+
+  const rows = [
+    ["Stuga", params.propertyName],
+    ["Gäst", params.guestName],
+    ["Incheckning", fmt(params.startDate)],
+    ["Utcheckning", fmt(params.endDate)],
+    ["Antal personer", params.numberOfPersons !== null ? String(params.numberOfPersons) : "Okänt (se Airbnb)"],
+    ...(params.phone ? [["Telefon", params.phone]] : []),
+    ...(params.reservationCode ? [["Bokningskod", params.reservationCode]] : []),
+  ];
+
+  const html = baseHtml(`
+    <tr><td class="hdr d-hdr" bgcolor="#1a2744" style="padding:24px 28px;background:linear-gradient(135deg,#1a2e1a,#1a2744);border-radius:16px 16px 0 0">
+      <p class="c-green" style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#4ade80">Ny Airbnb-bokning synkad</p>
+      <p class="c-wht" style="margin:0;font-size:24px;font-weight:700;color:#ffffff">${params.propertyName}</p>
+    </td></tr>
+    <tr><td class="bdy d-bg" bgcolor="#0e1320" style="padding:24px 28px">
+      <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#111827" style="border-radius:10px;margin-bottom:16px">
+        ${rows.map(([l, v], i, arr) => `<tr>
+          <td style="padding:11px 16px;font-size:13px;color:#94a3b8;width:42%${i < arr.length-1 ? ";border-bottom:1px solid #1e293b" : ""}">${l}</td>
+          <td style="padding:11px 16px;font-size:14px;color:#e2e8f0;font-weight:500${i < arr.length-1 ? ";border-bottom:1px solid #1e293b" : ""}">${v}</td>
+        </tr>`).join("")}
+      </table>
+      <p style="margin:0;font-size:12px;color:#4b5563;line-height:1.6">
+        Bokningen är automatiskt synkad från Airbnb och blockerar datumen i systemet.
+        ${params.numberOfPersons === null ? "Antal personer och gästinfo finns i Airbnb-appen." : ""}
+      </p>
+    </td></tr>
+    <tr><td class="d-foot" bgcolor="#060810" style="padding:14px 28px;text-align:center;font-size:12px;color:#4b5563;border-top:1px solid #1e293b">Bokningssystem — Airbnb-synk</td></tr>
+  `);
+
+  await r.emails.send({
+    from: FROM,
+    to: ownerEmail,
+    subject: `Airbnb: Ny bokning ${params.propertyName} — ${fmt(params.startDate)}`,
+    html,
+  });
+}
+
 // Bakåtkompatibilitet
 export async function sendBookingNotification(_params: {
   propertyName: string; weekLabel: string; guestName: string | null;
