@@ -571,6 +571,11 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
     });
     setLoading(false);
     if (!res.ok) { const d = await res.json(); setError(d.error || "Kunde inte skapa bokningen"); return; }
+    const data = await res.json();
+    if (data.depositUrl) {
+      window.location.href = data.depositUrl;
+      return;
+    }
     onBooked();
   }
 

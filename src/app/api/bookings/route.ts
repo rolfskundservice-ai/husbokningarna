@@ -178,9 +178,10 @@ export async function POST(req: Request) {
 
   const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { name: true } });
 
+  let depositUrl: string | null = null;
+
   if (property) {
     // Skapa Stripe deposit-session om totalpris och gästmail finns
-    let depositUrl: string | null = null;
     if (guestEmail && totalPrice && totalPrice > 0) {
       depositUrl = await createDepositSession({
         bookingId: booking.id,
@@ -238,5 +239,5 @@ export async function POST(req: Request) {
     ]);
   }
 
-  return NextResponse.json(booking, { status: 201 });
+  return NextResponse.json({ ...booking, depositUrl }, { status: 201 });
 }
