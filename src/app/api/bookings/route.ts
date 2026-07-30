@@ -208,7 +208,11 @@ export async function POST(req: Request) {
         notes: notes ?? null,
         bookingId: booking.id,
         addonToken,
-      }).catch(() => {});
+      }).catch((err) => {
+        console.error("[sendGuestConfirmation] fel:", err);
+      });
+    } else {
+      console.log("[booking] Inget gästmail – guestEmail saknas");
     }
   });
 
