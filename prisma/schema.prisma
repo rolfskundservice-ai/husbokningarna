@@ -100,6 +100,10 @@ model Booking {
   bedLinen        Boolean  @default(false)
   guestEmail      String?
   addonToken      String?  @unique // säker token för gästens tillvalsmail
+  totalPrice      Int?              // totalt bokningspris i SEK (heltal)
+  depositPaid     Boolean  @default(false)
+  remainderPaid   Boolean  @default(false)
+  stripeDepositId String?           // Stripe checkout session id för handpenning
   source      BookingSource @default(INTERNAL)
   status      BookingStatus @default(CONFIRMED)
   externalId  String?       // Airbnb UID från iCal, för att matcha vid sync

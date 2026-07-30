@@ -535,6 +535,7 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
   const [boatCounts, setBoatCounts] = useState<Record<BoatId, number>>({
     boat6hp: 0, boat99hp: 0, boat20hp: 0, boat25hp: 0,
   });
+  const [totalPrice, setTotalPrice] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [cleaning, setCleaning] = useState(false);
   const [bedLinen, setBedLinen] = useState(false);
@@ -562,6 +563,7 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
         guestEmail: guestEmail || undefined,
         notes: notes || undefined,
         numberOfPersons: persons,
+        totalPrice: totalPrice ? parseInt(totalPrice, 10) : undefined,
         ...boatCounts,
         cleaning,
         bedLinen,
@@ -619,6 +621,25 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
         <div>
           <label className="field-label">Antal personer</label>
           <Stepper value={persons} min={1} max={100} onChange={setPersons} />
+        </div>
+
+        {/* Totalt pris */}
+        <div>
+          <label className="field-label">Totalt pris (kr) <Opt /> <span className="text-gray-600 font-normal normal-case">— genererar betalningslänk till gäst</span></label>
+          <input
+            type="number"
+            min="0"
+            step="100"
+            value={totalPrice}
+            onChange={(e) => setTotalPrice(e.target.value)}
+            className="input-dark w-full"
+            placeholder="8000"
+          />
+          {totalPrice && parseInt(totalPrice) > 0 && (
+            <p className="text-xs mt-1" style={{ color: "#fbbf24" }}>
+              Handpenning 20%: {Math.round(parseInt(totalPrice) * 0.20).toLocaleString("sv-SE")} kr · Slutbetalning: {Math.round(parseInt(totalPrice) * 0.80).toLocaleString("sv-SE")} kr
+            </p>
+          )}
         </div>
 
         {/* Boats per type */}

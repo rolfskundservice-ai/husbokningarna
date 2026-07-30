@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { BookingSource, BookingStatus } from "@prisma/client";
 import { sendGuestConfirmation, sendOwnerNotification } from "@/lib/email";
+import { createDepositSession } from "@/lib/stripe";
 import crypto from "crypto";
 import { totalBoats, assignBoatNumbers, parseBoatNumbers } from "@/lib/boats";
 
@@ -76,6 +77,7 @@ const createBookingSchema = z.object({
   guestEmail: z.string().email().optional().or(z.literal("")),
   notes: z.string().optional(),
   numberOfPersons: z.number().int().min(1).optional(),
+  totalPrice: z.number().int().min(0).optional(),
   cleaning: z.boolean().optional(),
   bedLinen: z.boolean().optional(),
 }).merge(boatSchema);
@@ -91,7 +93,7 @@ export async function POST(req: Request) {
   }
 
   const { propertyId, startDate, endDate, guestName, guestEmail, notes,
-    numberOfPersons, cleaning, bedLinen,
+    numberOfPersons, totalPrice, cleaning, bedLinen,
     boat6hp, boat99hp, boat20hp, boat25hp } = parsed.data;
 
   if (session.user.role === "PARTNER") {
@@ -160,6 +162,7 @@ export async function POST(req: Request) {
       guestEmail: guestEmail || null,
       notes: notes || null,
       numberOfPersons: numberOfPersons ?? null,
+      totalPrice: totalPrice ?? null,
       boat6hp, boat99hp, boat20hp, boat25hp,
       boatNumbers,
       cleaning: cleaning ?? false,
@@ -176,6 +179,26 @@ export async function POST(req: Request) {
   const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { name: true } });
 
   if (property) {
+    // Skapa Stripe deposit-session om totalpris och gästmail finns
+    let depositUrl: string | null = null;
+    if (guestEmail && totalPrice && totalPrice > 0) {
+      depositUrl = await createDepositSession({
+        bookingId: booking.id,
+        guestEmail,
+        guestName: guestName || "Gäst",
+        propertyName: property.name,
+        startDate: start,
+        totalPriceSEK: totalPrice,
+      }).catch(() => null);
+
+      if (depositUrl) {
+        await prisma.booking.update({
+          where: { id: booking.id },
+          data: { stripeDepositId: depositUrl },
+        });
+      }
+    }
+
     await Promise.allSettled([
       sendOwnerNotification({
         propertyName: property.name,
@@ -208,6 +231,8 @@ export async function POST(req: Request) {
             notes: notes ?? null,
             bookingId: booking.id,
             addonToken,
+            depositUrl,
+            totalPrice: totalPrice ?? null,
           })
         : Promise.resolve(),
     ]);

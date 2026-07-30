@@ -78,6 +78,8 @@ export async function sendGuestConfirmation(params: {
   notes: string | null;
   bookingId: string;
   addonToken: string;
+  depositUrl?: string | null;
+  totalPrice?: number | null;
 }) {
   const r = getResend();
   if (!r) return;
@@ -155,6 +157,21 @@ export async function sendGuestConfirmation(params: {
         <tr><td class="c-green" style="padding:14px;text-align:center;font-size:13px;color:#4ade80">✓ Alla tillval är redan bokade</td></tr>
       </table>
       `}
+
+      ${params.depositUrl ? `
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;border-radius:12px;overflow:hidden;border:1px solid rgba(234,179,8,0.35)" bgcolor="#1a1500">
+        <tr><td style="padding:20px 20px 6px;background-color:#1a1500">
+          <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#fbbf24">Betalning</p>
+          <p style="margin:0 0 14px;font-size:13px;color:#d97706;line-height:1.5">
+            En handpenning på 20% (${Math.round((params.totalPrice ?? 0) * 0.20).toLocaleString("sv-SE")} kr) betalas nu för att bekräfta bokningen.<br>
+            Resterande 80% faktureras 14 dagar innan incheckning.
+          </p>
+          <a href="${params.depositUrl}" style="display:block;padding:15px 16px;border-radius:10px;text-decoration:none;font-size:16px;font-weight:800;text-align:center;color:#000000;background:#fbbf24;margin-bottom:14px">
+            💳 Betala handpenning — ${Math.round((params.totalPrice ?? 0) * 0.20).toLocaleString("sv-SE")} kr
+          </a>
+        </td></tr>
+      </table>
+      ` : ""}
     </td></tr>
     <tr><td class="d-foot c-lgray" bgcolor="#060810" style="background-color:#060810;padding:16px 28px;text-align:center;font-size:12px;color:#4b5563;border-top:1px solid #1e293b">Har du frågor? Svara på detta mail.</td></tr>
   `);
@@ -339,7 +356,55 @@ export async function sendAddonConfirmation(params: {
   });
 }
 
-// ── 5. Airbnb-synk notis till ÄGARE ─────────────────────────────────────────
+// ── 5. Slutbetalningspåminnelse till GÄST ────────────────────────────────────
+
+export async function sendRemainderPaymentEmail(params: {
+  guestEmail: string;
+  guestName: string;
+  propertyName: string;
+  startDate: string;
+  totalPrice: number;
+  paymentUrl: string;
+}) {
+  const r = getResend();
+  if (!r) return;
+
+  const remainder = Math.round(params.totalPrice * 0.80);
+
+  const html = baseHtml(`
+    <tr><td class="hdr d-hdr" bgcolor="#1a1500" style="padding:28px 28px 22px;background-color:#1a1500;border-radius:16px 16px 0 0">
+      <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#fbbf24">Slutbetalning</p>
+      <p class="c-wht" style="margin:0 0 6px;font-size:28px;font-weight:800;color:#ffffff;line-height:1.1">14 dagar kvar!</p>
+      <p style="margin:0;font-size:15px;color:#d97706">${params.guestName} — ${params.propertyName}</p>
+    </td></tr>
+    <tr><td class="bdy d-bg" bgcolor="#0e1320" style="padding:24px 28px;background-color:#0e1320">
+      <p class="c-gray" style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.6">
+        Din incheckning är om 14 dagar! Nu är det dags att betala resterande 80%.
+      </p>
+      <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#111827" style="border-radius:10px;margin-bottom:20px">
+        <tr><td style="padding:12px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b;width:42%">Stuga</td>
+            <td style="padding:12px 16px;font-size:14px;font-weight:600;color:#ffffff;border-bottom:1px solid #1e293b">${params.propertyName}</td></tr>
+        <tr><td style="padding:12px 16px;font-size:13px;color:#94a3b8;border-bottom:1px solid #1e293b">Incheckning</td>
+            <td style="padding:12px 16px;font-size:14px;font-weight:600;color:#4ade80;border-bottom:1px solid #1e293b">${fmt(params.startDate)}</td></tr>
+        <tr><td style="padding:12px 16px;font-size:13px;color:#94a3b8">Att betala</td>
+            <td style="padding:12px 16px;font-size:18px;font-weight:800;color:#fbbf24">${remainder.toLocaleString("sv-SE")} kr</td></tr>
+      </table>
+      <a href="${params.paymentUrl}" style="display:block;padding:18px 16px;border-radius:10px;text-decoration:none;font-size:17px;font-weight:800;text-align:center;color:#000000;background:#fbbf24">
+        💳 Betala ${remainder.toLocaleString("sv-SE")} kr nu
+      </a>
+    </td></tr>
+    <tr><td class="d-foot" bgcolor="#060810" style="padding:16px 28px;text-align:center;font-size:12px;color:#4b5563;border-top:1px solid #1e293b">Har du frågor? Svara på detta mail.</td></tr>
+  `);
+
+  await r.emails.send({
+    from: FROM,
+    to: params.guestEmail,
+    subject: `Slutbetalning — ${params.propertyName} om 14 dagar`,
+    html,
+  });
+}
+
+// ── 6. Airbnb-synk notis till ÄGARE ─────────────────────────────────────────
 
 export async function sendAirbnbSyncNotification(params: {
   propertyName: string;
