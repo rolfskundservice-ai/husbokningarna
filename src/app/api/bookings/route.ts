@@ -173,32 +173,16 @@ export async function POST(req: Request) {
   const boats = { boat6hp, boat99hp, boat20hp, boat25hp };
   const nights = Math.round((end.getTime() - start.getTime()) / 86400000);
 
-  prisma.property.findUnique({ where: { id: propertyId }, select: { name: true } }).then((p) => {
-    if (!p) return;
+  const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { name: true } });
 
-    sendOwnerNotification({
-      propertyName: p.name,
-      startDate: booking.startDate.toISOString(),
-      endDate: booking.endDate.toISOString(),
-      guestName: guestName ?? null,
-      guestEmail: guestEmail ?? null,
-      numberOfPersons: numberOfPersons ?? null,
-      boats,
-      boatNumbers: assignedNumbers,
-      nights,
-      cleaning: cleaning ?? false,
-      bedLinen: bedLinen ?? false,
-      notes: notes ?? null,
-      bookedBy: session.user.name,
-    }).catch(() => {});
-
-    if (guestEmail) {
-      sendGuestConfirmation({
-        guestEmail,
-        guestName: guestName || "Gäst",
-        propertyName: p.name,
+  if (property) {
+    await Promise.allSettled([
+      sendOwnerNotification({
+        propertyName: property.name,
         startDate: booking.startDate.toISOString(),
         endDate: booking.endDate.toISOString(),
+        guestName: guestName ?? null,
+        guestEmail: guestEmail ?? null,
         numberOfPersons: numberOfPersons ?? null,
         boats,
         boatNumbers: assignedNumbers,
@@ -206,15 +190,28 @@ export async function POST(req: Request) {
         cleaning: cleaning ?? false,
         bedLinen: bedLinen ?? false,
         notes: notes ?? null,
-        bookingId: booking.id,
-        addonToken,
-      }).catch((err) => {
-        console.error("[sendGuestConfirmation] fel:", err);
-      });
-    } else {
-      console.log("[booking] Inget gästmail – guestEmail saknas");
-    }
-  });
+        bookedBy: session.user.name,
+      }),
+      guestEmail
+        ? sendGuestConfirmation({
+            guestEmail,
+            guestName: guestName || "Gäst",
+            propertyName: property.name,
+            startDate: booking.startDate.toISOString(),
+            endDate: booking.endDate.toISOString(),
+            numberOfPersons: numberOfPersons ?? null,
+            boats,
+            boatNumbers: assignedNumbers,
+            nights,
+            cleaning: cleaning ?? false,
+            bedLinen: bedLinen ?? false,
+            notes: notes ?? null,
+            bookingId: booking.id,
+            addonToken,
+          })
+        : Promise.resolve(),
+    ]);
+  }
 
   return NextResponse.json(booking, { status: 201 });
 }
