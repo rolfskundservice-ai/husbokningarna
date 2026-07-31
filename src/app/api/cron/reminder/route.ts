@@ -47,33 +47,38 @@ export async function GET(req: Request) {
   const in15 = new Date(in14);
   in15.setDate(in15.getDate() + 1);
 
+  // Partnern (den som bokade) ska betala resterande 80%
   const paymentReminders = await prisma.booking.findMany({
     where: {
       status: BookingStatus.CONFIRMED,
       startDate: { gte: in14, lt: in15 },
-      guestEmail: { not: null },
       totalPrice: { not: null, gt: 0 },
       depositPaid: true,
       remainderPaid: false,
+      userId: { not: null },
     },
-    include: { property: { select: { name: true } } },
+    include: {
+      property: { select: { name: true } },
+      user: { select: { email: true, name: true } },
+    },
   });
 
   let reminders = 0;
   for (const b of paymentReminders) {
+    if (!b.user?.email) continue;
     try {
       const url = await createRemainderSession({
         bookingId: b.id,
-        guestEmail: b.guestEmail!,
-        guestName: b.guestName ?? "Gäst",
+        guestEmail: b.user.email,
+        guestName: b.user.name ?? "Partner",
         propertyName: b.property.name,
         startDate: b.startDate,
         totalPriceSEK: b.totalPrice!,
       });
       if (url) {
         await sendRemainderPaymentEmail({
-          guestEmail: b.guestEmail!,
-          guestName: b.guestName ?? "Gäst",
+          guestEmail: b.user.email,
+          guestName: b.user.name ?? "Partner",
           propertyName: b.property.name,
           startDate: b.startDate.toISOString(),
           totalPrice: b.totalPrice!,

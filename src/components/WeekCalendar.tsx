@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { getISOWeek } from "date-fns";
 import { BOAT_TYPES, BoatId, boatPrice } from "@/lib/boats";
 
@@ -149,6 +150,11 @@ function dayTextColor(status: DayStatus, inRange: boolean, isStart: boolean): st
 }
 
 export function WeekCalendar({ propertyId }: { propertyId: string }) {
+  const { data: session } = useSession();
+  const role = session?.user?.role;
+  const canBook = role === "PARTNER" || role === "ADMIN" || role === "OWNER" || role === "CARETAKER";
+  const isPartner = role === "PARTNER";
+
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [weeksAhead, setWeeksAhead] = useState(16);
@@ -181,6 +187,8 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
       setViewBooking(booking);
       return;
     }
+
+    if (!canBook) return;
 
     // Utcheckningsdag — tillåt incheckning samma dag
     if (isCheckoutOnly) {
@@ -499,11 +507,12 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
         </div>
       )}
 
-      {pendingRange && (
+      {pendingRange && canBook && (
         <BookingFormModal
           start={pendingRange.start}
           end={pendingRange.end}
           propertyId={propertyId}
+          isPartner={isPartner}
           onClose={() => setPendingRange(null)}
           onBooked={() => { setPendingRange(null); fetchBookings(); }}
         />
@@ -522,8 +531,8 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
 
 // ─── Booking form modal ───────────────────────────────────────────────────────
 
-function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
-  start: Date; end: Date; propertyId: string;
+function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked }: {
+  start: Date; end: Date; propertyId: string; isPartner: boolean;
   onClose: () => void; onBooked: () => void;
 }) {
   // startStr = incheckning, endStr = utcheckning (exclusive, dag efter sista natten)
@@ -628,24 +637,26 @@ function BookingFormModal({ start, end, propertyId, onClose, onBooked }: {
           <Stepper value={persons} min={1} max={100} onChange={setPersons} />
         </div>
 
-        {/* Totalt pris */}
-        <div>
-          <label className="field-label">Totalt pris (kr) <Opt /> <span className="text-gray-600 font-normal normal-case">— genererar betalningslänk till gäst</span></label>
-          <input
-            type="number"
-            min="0"
-            step="100"
-            value={totalPrice}
-            onChange={(e) => setTotalPrice(e.target.value)}
-            className="input-dark w-full"
-            placeholder="8000"
-          />
-          {totalPrice && parseInt(totalPrice) > 0 && (
-            <p className="text-xs mt-1" style={{ color: "#fbbf24" }}>
-              Handpenning 20%: {Math.round(parseInt(totalPrice) * 0.20).toLocaleString("sv-SE")} kr · Slutbetalning: {Math.round(parseInt(totalPrice) * 0.80).toLocaleString("sv-SE")} kr
-            </p>
-          )}
-        </div>
+        {/* Totalt pris — endast för partners */}
+        {isPartner && (
+          <div>
+            <label className="field-label">Totalt pris (kr) <Opt /> <span className="text-gray-600 font-normal normal-case">— genererar betalningslänk</span></label>
+            <input
+              type="number"
+              min="0"
+              step="100"
+              value={totalPrice}
+              onChange={(e) => setTotalPrice(e.target.value)}
+              className="input-dark w-full"
+              placeholder="8000"
+            />
+            {totalPrice && parseInt(totalPrice) > 0 && (
+              <p className="text-xs mt-1" style={{ color: "#fbbf24" }}>
+                Handpenning 20%: {Math.round(parseInt(totalPrice) * 0.20).toLocaleString("sv-SE")} kr · Slutbetalning: {Math.round(parseInt(totalPrice) * 0.80).toLocaleString("sv-SE")} kr
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Boats per type */}
         <div>
