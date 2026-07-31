@@ -11,6 +11,7 @@ const patchSchema = z.object({
   role: z.nativeEnum(Role).optional(),
   password: z.string().min(6).optional(),
   phone: z.string().optional(),
+  propertyIds: z.array(z.string()).optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -25,7 +26,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, role, password, phone } = parsed.data;
+  const { name, role, password, phone, propertyIds } = parsed.data;
   const data: Record<string, unknown> = {};
   if (name) data.name = name;
   if (role) data.role = role;
@@ -37,6 +38,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     data,
     select: { id: true, name: true, email: true, role: true, phone: true, createdAt: true },
   });
+
+  if (propertyIds !== undefined) {
+    await prisma.propertyAccess.deleteMany({ where: { userId: params.id } });
+    if (propertyIds.length > 0) {
+      await prisma.propertyAccess.createMany({
+        data: propertyIds.map((propertyId) => ({ userId: params.id, propertyId })),
+        skipDuplicates: true,
+      });
+    }
+  }
 
   return NextResponse.json(user);
 }

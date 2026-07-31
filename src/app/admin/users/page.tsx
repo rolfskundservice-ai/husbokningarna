@@ -10,10 +10,16 @@ export default async function AdminUsersPage() {
   if (!session) redirect("/login");
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
-  const users = await prisma.user.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, email: true, role: true, phone: true, createdAt: true },
-  });
+  const [users, properties] = await Promise.all([
+    prisma.user.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true, name: true, email: true, role: true, phone: true, createdAt: true,
+        propertyAccess: { select: { propertyId: true } },
+      },
+    }),
+    prisma.property.findMany({ orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }),
+  ]);
 
   return (
     <div className="min-h-screen">
@@ -26,7 +32,12 @@ export default async function AdminUsersPage() {
           </p>
         </div>
         <AdminUserList
-          users={users.map((u) => ({ ...u, createdAt: u.createdAt.toISOString() }))}
+          users={users.map((u) => ({
+            ...u,
+            createdAt: u.createdAt.toISOString(),
+            propertyIds: u.propertyAccess.map((a) => a.propertyId),
+          }))}
+          properties={properties}
           currentUserId={session.user.id}
         />
       </main>

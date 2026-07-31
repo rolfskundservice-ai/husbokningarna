@@ -26,6 +26,7 @@ const createUserSchema = z.object({
   password: z.string().min(6),
   role: z.nativeEnum(Role),
   phone: z.string().optional(),
+  propertyIds: z.array(z.string()).optional(),
 });
 
 export async function POST(req: Request) {
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, email, password, role, phone } = parsed.data;
+  const { name, email, password, role, phone, propertyIds } = parsed.data;
 
   const exists = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (exists) {
@@ -52,6 +53,13 @@ export async function POST(req: Request) {
     data: { name, email: email.toLowerCase().trim(), passwordHash, role, phone: phone || null },
     select: { id: true, name: true, email: true, role: true, phone: true, createdAt: true },
   });
+
+  if (propertyIds && propertyIds.length > 0) {
+    await prisma.propertyAccess.createMany({
+      data: propertyIds.map((propertyId) => ({ userId: user.id, propertyId })),
+      skipDuplicates: true,
+    });
+  }
 
   return NextResponse.json(user, { status: 201 });
 }

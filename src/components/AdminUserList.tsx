@@ -10,6 +10,12 @@ interface UserDTO {
   role: Role;
   phone: string | null;
   createdAt: string;
+  propertyIds: string[];
+}
+
+interface PropertyOption {
+  id: string;
+  name: string;
 }
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -20,7 +26,7 @@ const ROLE_LABELS: Record<Role, string> = {
   CLEANER: "Städerska",
 };
 
-export function AdminUserList({ users: initial, currentUserId }: { users: UserDTO[]; currentUserId: string }) {
+export function AdminUserList({ users: initial, properties, currentUserId }: { users: UserDTO[]; properties: PropertyOption[]; currentUserId: string }) {
   const [users, setUsers] = useState(initial);
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -43,6 +49,7 @@ export function AdminUserList({ users: initial, currentUserId }: { users: UserDT
           <EditUserRow
             key={u.id}
             user={u}
+            properties={properties}
             onSaved={(updated) => {
               setUsers((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
               setEditId(null);
@@ -95,6 +102,7 @@ export function AdminUserList({ users: initial, currentUserId }: { users: UserDT
 
       {showAdd ? (
         <AddUserForm
+          properties={properties}
           onCreated={(u) => {
             setUsers((prev) => [...prev, u]);
             setShowAdd(false);
@@ -114,12 +122,44 @@ export function AdminUserList({ users: initial, currentUserId }: { users: UserDT
   );
 }
 
+function PropertyCheckboxes({ properties, selected, onChange }: {
+  properties: PropertyOption[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  function toggle(id: string) {
+    onChange(selected.includes(id) ? selected.filter(x => x !== id) : [...selected, id]);
+  }
+  return (
+    <div>
+      <label className="mb-1 block text-xs text-gray-400">Tillgång till stugor</label>
+      <div className="space-y-1.5">
+        {properties.map(p => (
+          <label key={p.id} className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selected.includes(p.id)}
+              onChange={() => toggle(p.id)}
+              className="rounded"
+              style={{ accentColor: "#2563eb" }}
+            />
+            <span className="text-sm text-gray-300">{p.name}</span>
+          </label>
+        ))}
+        {properties.length === 0 && <p className="text-xs text-gray-600">Inga stugor skapade än</p>}
+      </div>
+    </div>
+  );
+}
+
 function EditUserRow({
   user,
+  properties,
   onSaved,
   onCancel,
 }: {
   user: UserDTO;
+  properties: PropertyOption[];
   onSaved: (u: UserDTO) => void;
   onCancel: () => void;
 }) {
@@ -127,14 +167,16 @@ function EditUserRow({
   const [role, setRole] = useState<Role>(user.role);
   const [phone, setPhone] = useState(user.phone ?? "");
   const [password, setPassword] = useState("");
+  const [selectedProperties, setSelectedProperties] = useState<string[]>(user.propertyIds);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSave() {
     setLoading(true);
     setError(null);
-    const body: Record<string, string> = { name, role, phone };
+    const body: Record<string, unknown> = { name, role, phone };
     if (password) body.password = password;
+    if (role === "PARTNER") body.propertyIds = selectedProperties;
 
     const res = await fetch(`/api/users/${user.id}`, {
       method: "PATCH",
@@ -148,7 +190,7 @@ function EditUserRow({
       setError(data.error || "Kunde inte spara");
       return;
     }
-    onSaved(await res.json());
+    onSaved({ ...(await res.json()), propertyIds: role === "PARTNER" ? selectedProperties : [] });
   }
 
   return (
@@ -195,6 +237,13 @@ function EditUserRow({
           placeholder="••••••••"
         />
       </div>
+      {role === "PARTNER" && (
+        <PropertyCheckboxes
+          properties={properties}
+          selected={selectedProperties}
+          onChange={setSelectedProperties}
+        />
+      )}
       {error && <p className="text-xs text-red-400">{error}</p>}
       <div className="flex gap-2">
         <button
@@ -217,12 +266,13 @@ function EditUserRow({
   );
 }
 
-function AddUserForm({ onCreated, onCancel }: { onCreated: (u: UserDTO) => void; onCancel: () => void }) {
+function AddUserForm({ properties, onCreated, onCancel }: { properties: PropertyOption[]; onCreated: (u: UserDTO) => void; onCancel: () => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("PARTNER");
+  const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -231,10 +281,13 @@ function AddUserForm({ onCreated, onCancel }: { onCreated: (u: UserDTO) => void;
     setLoading(true);
     setError(null);
 
+    const body: Record<string, unknown> = { name, email, password, role, phone: phone || undefined };
+    if (role === "PARTNER") body.propertyIds = selectedProperties;
+
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, role, phone: phone || undefined }),
+      body: JSON.stringify(body),
     });
     setLoading(false);
 
@@ -243,7 +296,8 @@ function AddUserForm({ onCreated, onCancel }: { onCreated: (u: UserDTO) => void;
       setError(typeof data.error === "string" ? data.error : "Kunde inte skapa användaren");
       return;
     }
-    onCreated(await res.json());
+    const created = await res.json();
+    onCreated({ ...created, propertyIds: role === "PARTNER" ? selectedProperties : [] });
   }
 
   return (
@@ -282,6 +336,13 @@ function AddUserForm({ onCreated, onCancel }: { onCreated: (u: UserDTO) => void;
         <label className="mb-1 block text-xs text-gray-400">Lösenord</label>
         <input required type="password" autoComplete="new-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="input-dark w-full" placeholder="Minst 6 tecken" />
       </div>
+      {role === "PARTNER" && (
+        <PropertyCheckboxes
+          properties={properties}
+          selected={selectedProperties}
+          onChange={setSelectedProperties}
+        />
+      )}
       {error && <p className="text-xs text-red-400">{error}</p>}
       <div className="flex gap-2">
         <button
