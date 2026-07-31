@@ -134,27 +134,43 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
         boat25hp: overlap.reduce((s, b) => s + b.boat25hp, 0),
       };
 
+      const current = {
+        boat6hp:  booking.boat6hp,
+        boat99hp: booking.boat99hp,
+        boat20hp: booking.boat20hp,
+        boat25hp: booking.boat25hp,
+      };
+
+      // Nytt totalt antal — max kapacitet minus vad andra bokningar använder
       const newCounts = {
-        boat6hp:  Math.min(parseInt(searchParams.get("boat6hp")  || "0"), 2 - used.boat6hp),
-        boat99hp: Math.min(parseInt(searchParams.get("boat99hp") || "0"), 2 - used.boat99hp),
-        boat20hp: Math.min(parseInt(searchParams.get("boat20hp") || "0"), 2 - used.boat20hp),
-        boat25hp: Math.min(parseInt(searchParams.get("boat25hp") || "0"), 1 - used.boat25hp),
+        boat6hp:  Math.min(parseInt(searchParams.get("boat6hp")  || "0"), 2 - used.boat6hp + current.boat6hp),
+        boat99hp: Math.min(parseInt(searchParams.get("boat99hp") || "0"), 2 - used.boat99hp + current.boat99hp),
+        boat20hp: Math.min(parseInt(searchParams.get("boat20hp") || "0"), 2 - used.boat20hp + current.boat20hp),
+        boat25hp: Math.min(parseInt(searchParams.get("boat25hp") || "0"), 1 - used.boat25hp + current.boat25hp),
+      };
+
+      // Betala bara för NYA båtar (delta mot vad som redan är bokat)
+      const addedCounts = {
+        boat6hp:  Math.max(0, newCounts.boat6hp  - current.boat6hp),
+        boat99hp: Math.max(0, newCounts.boat99hp - current.boat99hp),
+        boat20hp: Math.max(0, newCounts.boat20hp - current.boat20hp),
+        boat25hp: Math.max(0, newCounts.boat25hp - current.boat25hp),
       };
 
       const totalBoatPrice = BOAT_TYPES.reduce(
-        (s, t) => s + newCounts[t.id as BoatId] * boatPrice(t.weekPrice, nights), 0
+        (s, t) => s + addedCounts[t.id as BoatId] * boatPrice(t.weekPrice, nights), 0
       );
 
       if (totalBoatPrice === 0) {
-        return successPage("Inga båtar valda — ingen ändring gjordes.");
+        return successPage("Inga nya båtar valda — ingen ändring gjordes.");
       }
 
       const lines = BOAT_TYPES
-        .filter(t => (newCounts[t.id as BoatId] ?? 0) > 0)
-        .map(t => `${newCounts[t.id as BoatId]}× ${t.label}`)
+        .filter(t => (addedCounts[t.id as BoatId] ?? 0) > 0)
+        .map(t => `${addedCounts[t.id as BoatId]}× ${t.label}`)
         .join(", ");
 
-      // Om Stripe finns → betala först
+      // Om Stripe finns → betala de NYA båtarna, metadata innehåller ny totalsumma
       if (booking.guestEmail && getStripe()) {
         const counts = `${newCounts.boat6hp},${newCounts.boat99hp},${newCounts.boat20hp},${newCounts.boat25hp}`;
         const payUrl = await createAddonCheckout({
@@ -201,13 +217,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       boat25hp: overlap.reduce((s, b) => s + b.boat25hp, 0),
     };
 
-    const avail = {
-      boat6hp:  2 - used.boat6hp,
-      boat99hp: 2 - used.boat99hp,
-      boat20hp: 2 - used.boat20hp,
-      boat25hp: 1 - used.boat25hp,
-    };
-
     const current = {
       boat6hp:  booking.boat6hp,
       boat99hp: booking.boat99hp,
@@ -215,16 +224,25 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       boat25hp: booking.boat25hp,
     };
 
+    // Max = vad den här bokningen redan har + lediga platser hos andra
+    const avail = {
+      boat6hp:  current.boat6hp  + (2 - used.boat6hp),
+      boat99hp: current.boat99hp + (2 - used.boat99hp),
+      boat20hp: current.boat20hp + (2 - used.boat20hp),
+      boat25hp: current.boat25hp + (1 - used.boat25hp),
+    };
+
     const formBase = `${addonBase}&action=add-boat`;
 
     const rows = BOAT_TYPES.map(t => {
       const id = t.id as BoatId;
-      const max = avail[id] + current[id];
+      const max = avail[id];
       const cur = current[id];
       const price = boatPrice(t.weekPrice, nights);
-      const availLabel = max === 0
+      const extraAvail = max - cur;
+      const availLabel = extraAvail <= 0
         ? `<div class="boat-unavail">Fullbokat</div>`
-        : `<div class="boat-avail">${max} tillgänglig${max !== 1 ? "a" : ""}</div>`;
+        : `<div class="boat-avail">+${extraAvail} kan läggas till</div>`;
 
       return `<div class="boat-row">
         <div class="boat-info">
