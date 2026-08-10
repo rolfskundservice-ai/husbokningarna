@@ -181,12 +181,13 @@ export async function POST(req: Request) {
   let depositUrl: string | null = null;
 
   if (property) {
-    // Skapa Stripe deposit-session om totalpris och gästmail finns
-    if (guestEmail && totalPrice && totalPrice > 0) {
+    // Skapa Stripe deposit-session — betalas av partnern (den inloggade)
+    const bookerEmail = session.user.email;
+    if (bookerEmail && totalPrice && totalPrice > 0) {
       depositUrl = await createDepositSession({
         bookingId: booking.id,
-        guestEmail,
-        guestName: guestName || "Gäst",
+        guestEmail: bookerEmail,
+        guestName: session.user.name || "Partner",
         propertyName: property.name,
         startDate: start,
         totalPriceSEK: totalPrice,
