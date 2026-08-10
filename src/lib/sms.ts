@@ -7,9 +7,9 @@ function getElksAuth(): string | null {
   return "Basic " + Buffer.from(`${user}:${pass}`).toString("base64");
 }
 
-export async function sendSms(to: string, message: string): Promise<void> {
+export async function sendSms(to: string, message: string): Promise<string> {
   const auth = getElksAuth();
-  if (!auth) return;
+  if (!auth) return "";
 
   const phone = to.startsWith("+") ? to : `+46${to.replace(/^0/, "")}`;
 
