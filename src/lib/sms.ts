@@ -19,11 +19,16 @@ export async function sendSms(to: string, message: string): Promise<void> {
     message,
   });
 
-  await fetch(ELKS_URL, {
+  const res = await fetch(ELKS_URL, {
     method: "POST",
     headers: { Authorization: auth, "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
   });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`46elks fel ${res.status}: ${text}`);
+  }
 }
 
 export async function sendSmsToMany(phones: string[], message: string): Promise<void> {
