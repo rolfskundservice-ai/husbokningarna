@@ -25,10 +25,12 @@ export async function sendSms(to: string, message: string): Promise<void> {
     body: body.toString(),
   });
 
+  const responseText = await res.text();
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`46elks fel ${res.status}: ${text}`);
+    throw new Error(`46elks fel ${res.status}: ${responseText}`);
   }
+
+  return responseText;
 }
 
 export async function sendSmsToMany(phones: string[], message: string): Promise<void> {

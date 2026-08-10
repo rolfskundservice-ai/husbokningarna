@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { sendSmsToMany } from "@/lib/sms";
+import { sendSms } from "@/lib/sms";
 
 export async function GET() {
   const caretakers = await prisma.user.findMany({
@@ -16,8 +16,8 @@ export async function GET() {
   const results = [];
   for (const u of caretakers) {
     try {
-      await sendSmsToMany([u.phone!], `Kommande incheckningar om 14 dagar:\nTeststugan: incheckning 24/8 (Testgäst)`);
-      results.push({ name: u.name, phone: u.phone, ok: true });
+      const raw = await sendSms(u.phone!, `Kommande incheckningar om 14 dagar:\nTeststugan: incheckning 24/8 (Testgäst)`);
+      results.push({ name: u.name, phone: u.phone, ok: true, elksResponse: raw });
     } catch (err) {
       results.push({ name: u.name, phone: u.phone, ok: false, error: String(err) });
     }
