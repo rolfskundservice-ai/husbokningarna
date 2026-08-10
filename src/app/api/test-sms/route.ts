@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { sendSms } from "@/lib/sms";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Ej behörig" }, { status: 403 });
-  }
-
   const caretakers = await prisma.user.findMany({
     where: { role: "CARETAKER", phone: { not: null } },
     select: { name: true, phone: true },
