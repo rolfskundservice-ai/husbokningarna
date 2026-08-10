@@ -25,6 +25,20 @@ export async function GET(req: Request) {
     return `${d.getDate()}/${d.getMonth() + 1}`;
   }
 
+  function bookingExtras(b: {
+    boat6hp: number; boat99hp: number; boat20hp: number; boat25hp: number;
+    boatNumbers: string | null; bedLinen: boolean;
+  }): string {
+    const parts: string[] = [];
+    const totalBoats = b.boat6hp + b.boat99hp + b.boat20hp + b.boat25hp;
+    if (totalBoats > 0) {
+      const nums = b.boatNumbers ? ` (${b.boatNumbers})` : "";
+      parts.push(`Båt${totalBoats > 1 ? "ar" : ""}${nums}`);
+    }
+    if (b.bedLinen) parts.push("Lakan");
+    return parts.length > 0 ? ` — ${parts.join(", ")}` : "";
+  }
+
   // Hämta telefonnummer till fastighetsskötare och städerskor
   const [caretakers, cleaners] = await Promise.all([
     prisma.user.findMany({ where: { role: "CARETAKER", phone: { not: null } }, select: { phone: true } }),
@@ -58,7 +72,7 @@ export async function GET(req: Request) {
 
     if (caretakerPhones.length > 0) {
       const lines = tomorrowCheckins.map(b =>
-        `${b.property.name}: incheckning imorgon ${fmtDate(b.startDate.toISOString())}${b.guestName ? ` (${b.guestName})` : ""}`
+        `${b.property.name}: incheckning imorgon ${fmtDate(b.startDate.toISOString())}${b.guestName ? ` (${b.guestName})` : ""}${bookingExtras(b)}`
       ).join("\n");
       await sendSmsToMany(caretakerPhones, `Påminnelse incheckningar imorgon:\n${lines}`);
     }
@@ -73,7 +87,7 @@ export async function GET(req: Request) {
 
   if (in14Checkins.length > 0 && caretakerPhones.length > 0) {
     const lines = in14Checkins.map(b =>
-      `${b.property.name}: incheckning ${fmtDate(b.startDate.toISOString())}${b.guestName ? ` (${b.guestName})` : ""}`
+      `${b.property.name}: incheckning ${fmtDate(b.startDate.toISOString())}${b.guestName ? ` (${b.guestName})` : ""}${bookingExtras(b)}`
     ).join("\n");
     await sendSmsToMany(caretakerPhones, `Kommande incheckningar om 14 dagar:\n${lines}`);
   }

@@ -5,8 +5,8 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const to = searchParams.get("to") ?? "0761124197";
 
-  const msg14 = `Kommande incheckningar om 14 dagar:\nSjöstugan: incheckning 24/8 (Kowalski)\nSkogsstugan: incheckning 24/8 (Nowak)`;
-  const msgTomorrow = `Påminnelse incheckningar imorgon:\nSjöstugan: incheckning 11/8 (Kowalski)`;
+  const msg14 = `Kommande incheckningar om 14 dagar:\nSjöstugan: incheckning 24/8 (Kowalski) — Båtar (Båt 5, Båt 3), Lakan\nSkogsstugan: incheckning 24/8 (Nowak)`;
+  const msgTomorrow = `Påminnelse incheckningar imorgon:\nSjöstugan: incheckning 11/8 (Kowalski) — Båtar (Båt 5, Båt 3), Lakan`;
 
   await sendSms(to, msg14);
   await sendSms(to, msgTomorrow);
