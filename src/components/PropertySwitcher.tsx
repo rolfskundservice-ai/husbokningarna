@@ -42,9 +42,6 @@ export function PropertySwitcher({ properties }: { properties: Property[] }) {
         ))}
       </div>
 
-      {active.description && (
-        <p className="mb-4 text-sm text-gray-500">{active.description}</p>
-      )}
 
       <WeekCalendar key={active.id} propertyId={active.id} />
     </div>

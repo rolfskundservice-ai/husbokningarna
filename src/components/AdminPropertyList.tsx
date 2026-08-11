@@ -106,9 +106,6 @@ function PropertyRow({
         <span className="h-3 w-3 rounded-full" style={{ backgroundColor: property.color }} />
         <h2 className="font-medium text-white">{property.name}</h2>
       </div>
-      {property.description && (
-        <p className="mb-3 text-sm text-gray-500">{property.description}</p>
-      )}
 
       {/* Import från Airbnb */}
       <label className="mb-1 block text-sm font-medium text-gray-400">
