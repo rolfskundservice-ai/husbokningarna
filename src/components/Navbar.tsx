@@ -3,8 +3,23 @@
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 
+const LANG_FLAGS: Record<string, string> = { sv: "🇸🇪", en: "🇬🇧", pl: "🇵🇱" };
+const LANGS = ["sv", "en", "pl"];
+
 export function Navbar() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
+  // @ts-expect-error - custom field
+  const currentLang = (session?.user?.language as string) ?? "sv";
+
+  async function handleLangChange(lang: string) {
+    await fetch("/api/account/language", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: lang }),
+    });
+    await update({ language: lang });
+    window.location.reload();
+  }
 
   return (
     <nav style={{ background: "#0f0f0f", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
@@ -45,6 +60,22 @@ export function Navbar() {
               <span className="text-gray-500 text-xs">
                 {session.user.name} · {roleLabel(session.user.role)}
               </span>
+              {/* @ts-expect-error - custom field */}
+              {session?.user?.role === "PARTNER" && (
+                <div className="flex items-center gap-1">
+                  {LANGS.map(l => (
+                    <button
+                      key={l}
+                      onClick={() => handleLangChange(l)}
+                      title={l.toUpperCase()}
+                      className="rounded px-1 py-0.5 text-base transition"
+                      style={{ opacity: currentLang === l ? 1 : 0.4, background: currentLang === l ? "rgba(255,255,255,0.1)" : "transparent" }}
+                    >
+                      {LANG_FLAGS[l]}
+                    </button>
+                  ))}
+                </div>
+              )}
               <Link
                 href="/account/password"
                 className="text-gray-400 hover:text-white transition text-xs"

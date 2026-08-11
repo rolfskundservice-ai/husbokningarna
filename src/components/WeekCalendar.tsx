@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { getISOWeek } from "date-fns";
 import { BOAT_TYPES, BoatId, boatPrice } from "@/lib/boats";
+import { getTranslations } from "@/lib/i18n";
 
 export interface Booking {
   id: string;
@@ -31,9 +32,6 @@ interface WeekRow {
 
 type DayStatus = "available" | "booked_internal" | "booked_airbnb" | "past" | "today";
 
-const MONTHS_SV = ["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"];
-const MONTHS_SHORT = ["jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
-const DAY_NAMES = ["Mån","Tis","Ons","Tor","Fre","Lör","Sön"];
 
 function getMondayOf(date: Date): Date {
   const d = new Date(date);
@@ -152,6 +150,9 @@ function dayTextColor(status: DayStatus, inRange: boolean, isStart: boolean): st
 export function WeekCalendar({ propertyId }: { propertyId: string }) {
   const { data: session } = useSession();
   const role = session?.user?.role;
+  // @ts-expect-error custom field
+  const lang: string = session?.user?.language ?? "sv";
+  const tr = getTranslations(lang);
   const canBook = role === "PARTNER" || role === "ADMIN" || role === "OWNER" || role === "CARETAKER";
   const isPartner = role === "PARTNER";
 
@@ -202,7 +203,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
           return bs < addDays(end, 1) && be > start;
         });
         if (hasConflict) {
-          alert("Det finns bokade dagar i det valda intervallet. Välj ett annat datum.");
+          alert(tr.dateConflict);
           setSelectStart(null); setHoverDay(null); return;
         }
         setPendingRange({ start, end });
@@ -223,7 +224,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
       return bs < addDays(end, 1) && be > start;
     });
     if (hasConflict) {
-      alert("Det finns bokade dagar i det valda intervallet. Välj ett annat datum.");
+      alert(tr.dateConflict);
       setSelectStart(null);
       setHoverDay(null);
       return;
@@ -248,9 +249,9 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
       {/* Legend + controls */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
-          <LegendDot cls="day-available" label="Ledig" textColor="#6b7280" />
-          <LegendDot cls="day-booked-internal" label="Bokad (internt)" textColor="#93c5fd" />
-          <LegendDot cls="day-booked-airbnb" label="Bokad (Airbnb)" textColor="#fdba74" />
+          <LegendDot cls="day-available" label={tr.available} textColor="#6b7280" />
+          <LegendDot cls="day-booked-internal" label={tr.bookedInternal} textColor="#93c5fd" />
+          <LegendDot cls="day-booked-airbnb" label={tr.bookedAirbnb} textColor="#fdba74" />
           <LegendDot cls="day-selected" label="Markerat" textColor="#a5b4fc" />
         </div>
         <div className="flex items-center gap-3">
@@ -287,7 +288,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                 >
                   V.
                 </th>
-                {DAY_NAMES.map((d, i) => (
+                {tr.days.map((d: string, i: number) => (
                   <th
                     key={d}
                     className="py-4 px-1 text-center text-xs font-bold tracking-wide select-none"
@@ -322,7 +323,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                             borderTop: wi > 0 ? "1px solid rgba(255,255,255,0.06)" : "none",
                           }}
                         >
-                          {MONTHS_SV[firstDay.getMonth()]} {firstDay.getFullYear()}
+                          {tr.months[firstDay.getMonth()]} {firstDay.getFullYear()}
                         </td>
                       </tr>
                     )}
@@ -450,7 +451,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
                                 </div>
                                 {day.getDate() === 1 && (
                                   <div className="text-[10px] mt-0.5 font-medium" style={{ color: textColor, opacity: 0.6 }}>
-                                    {MONTHS_SHORT[day.getMonth()]}
+                                    {tr.monthsShort[day.getMonth()]}
                                   </div>
                                 )}
                                 {isBooked && booking && isArrival && (
@@ -513,6 +514,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
           end={pendingRange.end}
           propertyId={propertyId}
           isPartner={isPartner}
+          tr={tr}
           onClose={() => setPendingRange(null)}
           onBooked={() => { setPendingRange(null); fetchBookings(); }}
         />
@@ -523,6 +525,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
           booking={viewBooking}
           onClose={() => setViewBooking(null)}
           onDeleted={() => { setViewBooking(null); fetchBookings(); }}
+          tr={tr}
         />
       )}
     </div>
@@ -531,8 +534,9 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
 
 // ─── Booking form modal ───────────────────────────────────────────────────────
 
-function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked }: {
+function BookingFormModal({ start, end, propertyId, isPartner, tr, onClose, onBooked }: {
   start: Date; end: Date; propertyId: string; isPartner: boolean;
+  tr: ReturnType<typeof getTranslations>;
   onClose: () => void; onBooked: () => void;
 }) {
   // startStr = incheckning, endStr = utcheckning (exclusive, dag efter sista natten)
@@ -594,9 +598,9 @@ function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked
     <Modal onClose={onClose}>
       <div className="mb-5 flex items-start justify-between">
         <div>
-          <h2 className="text-lg font-bold text-white">Ny bokning</h2>
+          <h2 className="text-lg font-bold text-white">{tr.newBooking}</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            {nights} {nights !== 1 ? "nätter" : "natt"}
+            {nights} {nights !== 1 ? tr.nights : tr.night}
           </p>
         </div>
         <CloseBtn onClick={onClose} />
@@ -606,12 +610,12 @@ function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked
         {/* Dates */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="field-label">Incheckning</label>
+            <label className="field-label">{tr.checkin}</label>
             <input type="date" required value={startStr}
               onChange={(e) => setStartStr(e.target.value)} className="input-dark w-full" />
           </div>
           <div>
-            <label className="field-label">Utcheckning</label>
+            <label className="field-label">{tr.checkout}</label>
             <input type="date" required value={endStr} min={addDays(new Date(startStr), 1).toISOString().slice(0,10)}
               onChange={(e) => setEndStr(e.target.value)} className="input-dark w-full" />
           </div>
@@ -620,12 +624,12 @@ function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked
         {/* Guest name + email */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="field-label">Fiskegrupp / gästnamn <Opt /></label>
+            <label className="field-label">{tr.guestName} <Opt /></label>
             <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)}
               className="input-dark w-full" placeholder="Kowalski fiskesällskap" />
           </div>
           <div>
-            <label className="field-label">Gästens e-post <Opt /></label>
+            <label className="field-label">{tr.guestEmail} <Opt /></label>
             <input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)}
               className="input-dark w-full" placeholder="gast@exempel.se" />
           </div>
@@ -633,14 +637,14 @@ function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked
 
         {/* Persons */}
         <div>
-          <label className="field-label">Antal personer</label>
+          <label className="field-label">{tr.persons}</label>
           <Stepper value={persons} min={1} max={100} onChange={setPersons} />
         </div>
 
         {/* Totalt pris — endast för partners */}
         {isPartner && (
           <div>
-            <label className="field-label">Totalt pris (kr) <Opt /> <span className="text-gray-600 font-normal normal-case">— genererar betalningslänk</span></label>
+            <label className="field-label">{tr.totalPrice} <Opt /> <span className="text-gray-600 font-normal normal-case">{tr.totalPriceHint}</span></label>
             <input
               type="number"
               min="0"
@@ -652,7 +656,7 @@ function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked
             />
             {totalPrice && parseInt(totalPrice) > 0 && (
               <p className="text-xs mt-1" style={{ color: "#fbbf24" }}>
-                Handpenning 20%: {Math.round(parseInt(totalPrice) * 0.20).toLocaleString("sv-SE")} kr · Slutbetalning: {Math.round(parseInt(totalPrice) * 0.80).toLocaleString("sv-SE")} kr
+                {tr.deposit20}: {Math.round(parseInt(totalPrice) * 0.20).toLocaleString("sv-SE")} kr · {tr.remainder80}: {Math.round(parseInt(totalPrice) * 0.80).toLocaleString("sv-SE")} kr
               </p>
             )}
           </div>
@@ -660,7 +664,7 @@ function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked
 
         {/* Boats per type */}
         <div>
-          <label className="field-label mb-2 block">Båtar <Opt /></label>
+          <label className="field-label mb-2 block">{tr.boats} <Opt /></label>
           <div className="space-y-2">
             {BOAT_TYPES.map(t => {
               const id = t.id as BoatId;
@@ -693,7 +697,7 @@ function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked
           </div>
           {boatTotal > 0 && (
             <p className="mt-2 text-right text-sm text-blue-400">
-              Båtar totalt: <strong className="text-white">{boatTotal.toLocaleString("sv-SE")} kr</strong>
+              {tr.boats}: <strong className="text-white">{boatTotal.toLocaleString("sv-SE")} kr</strong>
             </p>
           )}
         </div>
@@ -702,17 +706,17 @@ function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked
         <div className="flex gap-4">
           <CheckOption
             id="cleaning" checked={cleaning} onChange={setCleaning}
-            label="Städning" emoji="🧹"
+            label={tr.cleaning} emoji="🧹"
           />
           <CheckOption
             id="bedlinen" checked={bedLinen} onChange={setBedLinen}
-            label="Lakan" emoji="🛏"
+            label={tr.bedLinen} emoji="🛏"
           />
         </div>
 
         {/* Notes */}
         <div>
-          <label className="field-label">Anteckning <Opt /></label>
+          <label className="field-label">{tr.notes} <Opt /></label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
             className="input-dark w-full resize-none" rows={2}
             placeholder="Ankomstid, önskemål…" />
@@ -721,9 +725,9 @@ function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked
         {error && <p className="text-sm text-red-400">{error}</p>}
 
         <div className="flex justify-end gap-2 pt-1">
-          <GhostBtn onClick={onClose}>Avbryt</GhostBtn>
+          <GhostBtn onClick={onClose}>{tr.cancel}</GhostBtn>
           <PrimaryBtn type="submit" disabled={loading}>
-            {loading ? "Bokar…" : "Bekräfta bokning"}
+            {loading ? tr.booking : tr.book}
           </PrimaryBtn>
         </div>
       </form>
@@ -733,8 +737,8 @@ function BookingFormModal({ start, end, propertyId, isPartner, onClose, onBooked
 
 // ─── Booking detail modal ─────────────────────────────────────────────────────
 
-function BookingDetailModal({ booking, onClose, onDeleted }: {
-  booking: Booking; onClose: () => void; onDeleted: () => void;
+function BookingDetailModal({ booking, onClose, onDeleted, tr }: {
+  booking: Booking; onClose: () => void; onDeleted: () => void; tr: ReturnType<typeof getTranslations>;
 }) {
   const [loading, setLoading] = useState(false);
   const [emailInput, setEmailInput] = useState("");
@@ -747,11 +751,11 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
     const res = await fetch(`/api/bookings/${booking.id}`, { method: "DELETE" });
     setLoading(false);
     if (res.ok) onDeleted();
-    else { const d = await res.json(); alert(d.error || "Kunde inte ta bort"); }
+    else { const d = await res.json(); alert(d.error || tr.error); }
   }
 
   async function handleSendEmail() {
-    if (!emailInput.includes("@")) { alert("Ange en giltig e-postadress"); return; }
+    if (!emailInput.includes("@")) { alert(tr.guestEmailAddress); return; }
     setSending(true);
     const res = await fetch(`/api/bookings/${booking.id}/send-guest-email`, {
       method: "POST",
@@ -760,7 +764,7 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
     });
     setSending(false);
     if (res.ok) { setSent(true); setEmailInput(""); }
-    else { const d = await res.json(); alert(d.error || "Kunde inte skicka mailet"); }
+    else { const d = await res.json(); alert(d.error || tr.error); }
   }
 
   const start = new Date(booking.startDate);
@@ -784,14 +788,14 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
       </div>
 
       <div className="space-y-3">
-        <DetailRow label="Incheckning" value={fmt(start)} />
-        <DetailRow label="Utcheckning" value={fmt(lastDay)} />
-        <DetailRow label="Nätter" value={`${nights} ${nights !== 1 ? "nätter" : "natt"}`} />
+        <DetailRow label={tr.checkin} value={fmt(start)} />
+        <DetailRow label={tr.checkout} value={fmt(lastDay)} />
+        <DetailRow label={tr.nights} value={`${nights} ${nights !== 1 ? tr.nights : tr.night}`} />
         {booking.numberOfPersons != null && (
-          <DetailRow label="Antal personer" value={`${booking.numberOfPersons} person${booking.numberOfPersons !== 1 ? "er" : ""}`} />
+          <DetailRow label={tr.persons} value={`${booking.numberOfPersons}`} />
         )}
         {(booking.numberOfBoats ?? 0) > 0 && (
-          <DetailRow label="Båtar" value={
+          <DetailRow label={tr.boats} value={
             BOAT_TYPES.filter(t => ((booking as unknown as Record<string, number>)[t.id] ?? 0) > 0)
               .map(t => `${(booking as unknown as Record<string, number>)[t.id]}× ${t.label}`)
               .join(", ")
@@ -799,33 +803,30 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
         )}
         {(booking.cleaning || booking.bedLinen) && (
           <DetailRow
-            label="Övrigt"
-            value={[booking.cleaning && "Städning", booking.bedLinen && "Lakan"].filter(Boolean).join(", ")}
+            label={tr.notes}
+            value={[booking.cleaning && tr.cleaning, booking.bedLinen && tr.bedLinen].filter(Boolean).join(", ")}
           />
         )}
-        {booking.notes && <DetailRow label="Anteckning" value={booking.notes} />}
+        {booking.notes && <DetailRow label={tr.notes} value={booking.notes} />}
         {booking.userName && booking.source !== "AIRBNB" && (
-          <DetailRow label="Bokad av" value={booking.userName} />
+          <DetailRow label={tr.bookedBy} value={booking.userName} />
         )}
       </div>
 
       {/* Skicka bokningsmail till gäst */}
       <div className="mt-5 rounded-xl p-4" style={{ background: "rgba(37,99,235,0.08)", border: "1px solid rgba(37,99,235,0.2)" }}>
         <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "#60a5fa" }}>
-          ✉️ Skicka bokningsmail till gäst
-        </p>
-        <p className="text-xs mb-3" style={{ color: "#6b7280" }}>
-          Gästen får bekräftelse med knappar för att boka båt, städning och lakan.
+          ✉️ {tr.sendGuestEmail}
         </p>
         {sent ? (
-          <p className="text-sm font-semibold" style={{ color: "#4ade80" }}>✓ Mail skickat!</p>
+          <p className="text-sm font-semibold" style={{ color: "#4ade80" }}>✓ {tr.emailSent}</p>
         ) : (
           <div className="flex gap-2">
             <input
               type="email"
               value={emailInput}
               onChange={e => setEmailInput(e.target.value)}
-              placeholder="gast@exempel.se"
+              placeholder={tr.guestEmailAddress}
               className="input-dark flex-1 text-sm"
               onKeyDown={e => e.key === "Enter" && handleSendEmail()}
             />
@@ -835,7 +836,7 @@ function BookingDetailModal({ booking, onClose, onDeleted }: {
               className="rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 transition whitespace-nowrap"
               style={{ background: "linear-gradient(135deg,#2563eb,#7c3aed)" }}
             >
-              {sending ? "Skickar…" : "Skicka"}
+              {sending ? tr.sending : tr.send}
             </button>
           </div>
         )}

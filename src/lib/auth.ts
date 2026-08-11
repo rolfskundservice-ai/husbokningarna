@@ -31,6 +31,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          language: user.language ?? "sv",
         };
       },
     }),
@@ -41,6 +42,8 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         // @ts-expect-error - role added by authorize()
         token.role = user.role;
+        // @ts-expect-error - language added by authorize()
+        token.language = user.language ?? "sv";
       }
       return token;
     },
@@ -49,6 +52,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         // @ts-expect-error - custom field
         session.user.role = token.role;
+        // @ts-expect-error - custom field
+        session.user.language = token.language ?? "sv";
       }
       return session;
     },
