@@ -88,11 +88,14 @@ export async function syncAirbnbCalendar(propertyId: string) {
   });
 
   for (const ev of incomingEvents) {
-    // Airbnb spärrar automatiskt dagens datum med ett 1-dagarsblock — ignorera det
-    const startsToday = dateStr(ev.start) === dateStr(todayMidnight);
     const durationDays = (ev.end.getTime() - ev.start.getTime()) / oneDayMs;
-    const isAutomaticTodayBlock = startsToday && durationDays <= 1.1;
-    if (isAutomaticTodayBlock) continue;
+    const summaryLower = (ev.summary ?? "").toLowerCase();
+
+    // Hoppa över Airbnbs automatiska 1-dagarsblock (idag-spärr eller "Not available"-block)
+    const isAirbnbBlock =
+      durationDays <= 1.1 &&
+      (dateStr(ev.start) === dateStr(todayMidnight) || summaryLower.includes("not available") || summaryLower.includes("airbnb (not available)"));
+    if (isAirbnbBlock) continue;
 
     const { numberOfPersons, phone, reservationCode } = parseAirbnbDescription(ev.description);
 
