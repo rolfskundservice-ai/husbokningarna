@@ -60,7 +60,6 @@ export function Navbar() {
               <span className="text-gray-500 text-xs">
                 {session.user.name} · {roleLabel(session.user.role)}
               </span>
-              {/* @ts-expect-error - custom field */}
               {session?.user?.role === "PARTNER" && (
                 <div className="flex items-center gap-1">
                   {LANGS.map(l => (
