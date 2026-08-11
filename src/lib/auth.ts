@@ -37,13 +37,16 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         // @ts-expect-error - role added by authorize()
         token.role = user.role;
         // @ts-expect-error - language added by authorize()
         token.language = user.language ?? "sv";
+      }
+      if (trigger === "update" && session?.language) {
+        token.language = session.language;
       }
       return token;
     },

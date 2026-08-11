@@ -8,8 +8,7 @@ const LANGS = ["sv", "en", "pl"];
 
 export function Navbar() {
   const { data: session, update } = useSession();
-  // @ts-expect-error - custom field
-  const currentLang = (session?.user?.language as string) ?? "sv";
+  const currentLang = ((session?.user as Record<string, unknown>)?.language as string) ?? "sv";
 
   async function handleLangChange(lang: string) {
     await fetch("/api/account/language", {
