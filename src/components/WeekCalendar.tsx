@@ -586,6 +586,10 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, customPricing
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isPartner && (!totalPrice || parseInt(totalPrice) <= 0)) {
+      setError("Ange ett pris för att skapa betalningslänk");
+      return;
+    }
     setLoading(true); setError(null);
     const res = await fetch("/api/bookings", {
       method: "POST",
@@ -668,16 +672,22 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, customPricing
         {/* Totalt pris — endast för partners */}
         {isPartner && (
           <div>
-            <label className="field-label">{tr.totalPrice} <Opt /> <span className="text-gray-600 font-normal normal-case">{tr.totalPriceHint}</span></label>
-            <input
-              type="number"
-              min="0"
-              step="100"
-              value={totalPrice}
-              onChange={(e) => setTotalPrice(e.target.value)}
-              className="input-dark w-full"
-              placeholder="8000"
-            />
+            <label className="field-label">{tr.totalPrice} <span className="text-gray-600 font-normal normal-case">{tr.totalPriceHint}</span></label>
+            {customPricing?.basePrice ? (
+              <div className="input-dark w-full flex items-center" style={{ cursor: "default", userSelect: "none" }}>
+                <span className="text-white font-semibold">{customPricing.basePrice.toLocaleString("sv-SE")} kr</span>
+              </div>
+            ) : (
+              <input
+                type="number"
+                min="0"
+                step="100"
+                value={totalPrice}
+                onChange={(e) => setTotalPrice(e.target.value)}
+                className="input-dark w-full"
+                placeholder="8000"
+              />
+            )}
             {totalPrice && parseInt(totalPrice) > 0 && (
               <p className="text-xs mt-1" style={{ color: "#fbbf24" }}>
                 {tr.deposit20}: {Math.round(parseInt(totalPrice) * 0.20).toLocaleString("sv-SE")} kr · {tr.remainder80}: {Math.round(parseInt(totalPrice) * 0.80).toLocaleString("sv-SE")} kr

@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     if (!access) return NextResponse.json({ error: "Ingen åtkomst" }, { status: 403 });
   }
 
-  const where: Record<string, unknown> = { status: BookingStatus.CONFIRMED };
+  const where: Record<string, unknown> = { status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING] } };
   if (propertyId) where.propertyId = propertyId;
   if (from && to) {
     where.AND = [{ startDate: { lt: new Date(to) } }, { endDate: { gt: new Date(from) } }];
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
   const overlapping = await prisma.booking.findFirst({
     where: {
       propertyId,
-      status: BookingStatus.CONFIRMED,
+      status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING] },
       startDate: { lt: end },
       endDate: { gt: start },
     },
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
   // Kolla båttillgänglighet globalt och samla tagna båtnummer
   const overlapBookings = await prisma.booking.findMany({
     where: {
-      status: BookingStatus.CONFIRMED,
+      status: { in: [BookingStatus.CONFIRMED, BookingStatus.PENDING] },
       startDate: { lt: end },
       endDate: { gt: start },
     },
@@ -169,7 +169,9 @@ export async function POST(req: Request) {
       bedLinen: bedLinen ?? false,
       addonToken,
       source: BookingSource.INTERNAL,
-      status: BookingStatus.CONFIRMED,
+      status: (session.user.role === "PARTNER" && totalPrice && totalPrice > 0)
+        ? BookingStatus.PENDING
+        : BookingStatus.CONFIRMED,
     },
   });
 

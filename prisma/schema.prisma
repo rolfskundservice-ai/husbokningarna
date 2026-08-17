@@ -81,6 +81,7 @@ enum BookingSource {
 }
 
 enum BookingStatus {
+  PENDING
   CONFIRMED
   CANCELLED
 }
