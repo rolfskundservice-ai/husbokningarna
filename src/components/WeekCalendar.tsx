@@ -624,7 +624,9 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, customPricing
     return boatPrice(customPricing?.boatPrice ?? weekPrice, nights);
   }
   const boatTotal     = BOAT_TYPES.reduce((s, t) => s + resolveBoatPrice(t.weekPrice) * boatCounts[t.id as BoatId], 0);
-  const housePrice    = parseInt(totalPrice || "0") || 0;
+  const housePrice    = customPricing?.basePrice
+    ? boatPrice(customPricing.basePrice, nights)
+    : (parseInt(totalPrice || "0") || 0);
   const cleaningCost  = cleaning ? cleaningPrice : 0;
   const linenCost     = bedLinen ? linenPrice : 0;
   const grandTotal    = housePrice + boatTotal + cleaningCost + linenCost;
@@ -682,7 +684,8 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, customPricing
             <label className="field-label">{tr.totalPrice} <span className="text-gray-600 font-normal normal-case">{tr.totalPriceHint}</span></label>
             {customPricing?.basePrice ? (
               <div className="input-dark w-full flex items-center" style={{ cursor: "default", userSelect: "none" }}>
-                <span className="text-white font-semibold">{customPricing.basePrice.toLocaleString("sv-SE")} kr</span>
+                <span className="text-white font-semibold">{housePrice.toLocaleString("sv-SE")} kr</span>
+                <span className="ml-2 text-xs text-gray-500">({customPricing.basePrice.toLocaleString("sv-SE")} kr/vecka)</span>
               </div>
             ) : (
               <input
