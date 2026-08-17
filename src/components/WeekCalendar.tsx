@@ -586,7 +586,7 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, customPricing
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (isPartner && (!totalPrice || parseInt(totalPrice) <= 0)) {
+    if (isPartner && grandTotal <= 0) {
       setError("Ange ett pris för att skapa betalningslänk");
       return;
     }
