@@ -195,7 +195,7 @@ export async function POST(req: Request) {
         propertyName: property.name,
         startDate: start,
         totalPriceSEK: totalPrice,
-      }).catch(() => null);
+      }).catch((err) => { console.error("Stripe deposit error:", err); return null; });
 
       if (!depositUrl && session.user.role === "PARTNER") {
         // Stripe misslyckades — ta bort bokningen och returnera fel
