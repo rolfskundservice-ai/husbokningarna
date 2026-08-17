@@ -33,8 +33,10 @@ model User {
   passwordHash  String
   role          Role     @default(PARTNER)
   phone         String?
-  language      String   @default("sv")
-  createdAt     DateTime @default(now())
+  language            String   @default("sv")
+  customPricing       Json?    // {basePrice, boatPrice, cleaningPrice, linenPrice} — endast för PARTNER
+  suppressGuestEmails Boolean  @default(false)
+  createdAt           DateTime @default(now())
 
   bookings      Booking[]
   propertyAccess PropertyAccess[]

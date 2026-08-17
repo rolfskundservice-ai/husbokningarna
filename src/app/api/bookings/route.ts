@@ -177,6 +177,8 @@ export async function POST(req: Request) {
   const nights = Math.round((end.getTime() - start.getTime()) / 86400000);
 
   const property = await prisma.property.findUnique({ where: { id: propertyId }, select: { name: true } });
+  const bookerUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { suppressGuestEmails: true } });
+  const suppressGuest = bookerUser?.suppressGuestEmails ?? false;
 
   let depositUrl: string | null = null;
 
@@ -217,7 +219,7 @@ export async function POST(req: Request) {
         notes: notes ?? null,
         bookedBy: session.user.name,
       }),
-      guestEmail
+      (!suppressGuest && guestEmail)
         ? sendGuestConfirmation({
             guestEmail,
             guestName: guestName || "Gäst",

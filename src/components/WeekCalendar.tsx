@@ -147,6 +147,13 @@ function dayTextColor(status: DayStatus, inRange: boolean, isStart: boolean): st
   return "#9ca3af";
 }
 
+interface CustomPricing {
+  basePrice?: number;
+  boatPrice?: number;
+  cleaningPrice?: number;
+  linenPrice?: number;
+}
+
 export function WeekCalendar({ propertyId }: { propertyId: string }) {
   const { data: session } = useSession();
   const role = session?.user?.role;
@@ -155,6 +162,16 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
   const tr = getTranslations(lang);
   const canBook = role === "PARTNER" || role === "ADMIN" || role === "OWNER" || role === "CARETAKER";
   const isPartner = role === "PARTNER";
+
+  const [customPricing, setCustomPricing] = useState<CustomPricing | null>(null);
+
+  useEffect(() => {
+    if (isPartner) {
+      fetch("/api/account/me").then(r => r.json()).then(d => {
+        if (d.customPricing) setCustomPricing(d.customPricing);
+      }).catch(() => {});
+    }
+  }, [isPartner]);
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -515,6 +532,7 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
           propertyId={propertyId}
           isPartner={isPartner}
           tr={tr}
+          customPricing={customPricing}
           onClose={() => setPendingRange(null)}
           onBooked={() => { setPendingRange(null); fetchBookings(); }}
         />
@@ -534,9 +552,10 @@ export function WeekCalendar({ propertyId }: { propertyId: string }) {
 
 // ─── Booking form modal ───────────────────────────────────────────────────────
 
-function BookingFormModal({ start, end, propertyId, isPartner, tr, onClose, onBooked }: {
+function BookingFormModal({ start, end, propertyId, isPartner, tr, customPricing, onClose, onBooked }: {
   start: Date; end: Date; propertyId: string; isPartner: boolean;
   tr: ReturnType<typeof getTranslations>;
+  customPricing?: CustomPricing | null;
   onClose: () => void; onBooked: () => void;
 }) {
   // startStr = incheckning, endStr = utcheckning (exclusive, dag efter sista natten)
@@ -548,7 +567,9 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, onClose, onBo
   const [boatCounts, setBoatCounts] = useState<Record<BoatId, number>>({
     boat6hp: 0, boat99hp: 0, boat20hp: 0, boat25hp: 0,
   });
-  const [totalPrice, setTotalPrice] = useState<string>("");
+  const [totalPrice, setTotalPrice] = useState<string>(
+    customPricing?.basePrice ? String(customPricing.basePrice) : ""
+  );
   const [notes, setNotes] = useState("");
   const [cleaning, setCleaning] = useState(false);
   const [bedLinen, setBedLinen] = useState(false);
@@ -592,7 +613,10 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, onClose, onBo
     onBooked();
   }
 
-  const boatTotal = BOAT_TYPES.reduce((s, t) => s + boatPrice(t.weekPrice, nights) * boatCounts[t.id as BoatId], 0);
+  function resolveBoatPrice(weekPrice: number): number {
+    return boatPrice(customPricing?.boatPrice ?? weekPrice, nights);
+  }
+  const boatTotal = BOAT_TYPES.reduce((s, t) => s + resolveBoatPrice(t.weekPrice) * boatCounts[t.id as BoatId], 0);
 
   return (
     <Modal onClose={onClose}>
@@ -668,7 +692,7 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, onClose, onBo
           <div className="space-y-2">
             {BOAT_TYPES.map(t => {
               const id = t.id as BoatId;
-              const price = boatPrice(t.weekPrice, nights);
+              const price = resolveBoatPrice(t.weekPrice);
               const max = t.total;
               const count = boatCounts[id];
               return (

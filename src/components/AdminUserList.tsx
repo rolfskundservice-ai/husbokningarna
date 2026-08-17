@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { Role } from "@prisma/client";
 
+interface CustomPricing {
+  basePrice?: number;
+  boatPrice?: number;
+  cleaningPrice?: number;
+  linenPrice?: number;
+}
+
 interface UserDTO {
   id: string;
   name: string;
@@ -11,6 +18,8 @@ interface UserDTO {
   phone: string | null;
   createdAt: string;
   propertyIds: string[];
+  customPricing?: CustomPricing | null;
+  suppressGuestEmails?: boolean;
 }
 
 interface PropertyOption {
@@ -152,6 +161,51 @@ function PropertyCheckboxes({ properties, selected, onChange }: {
   );
 }
 
+function PartnerPricingFields({ pricing, onChange, suppress, onSuppressChange }: {
+  pricing: CustomPricing;
+  onChange: (p: CustomPricing) => void;
+  suppress: boolean;
+  onSuppressChange: (v: boolean) => void;
+}) {
+  function num(key: keyof CustomPricing, val: string) {
+    const n = parseInt(val, 10);
+    onChange({ ...pricing, [key]: isNaN(n) ? undefined : n });
+  }
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs text-gray-400 font-semibold uppercase tracking-wider">Egna priser (kr)</label>
+      <div className="grid grid-cols-2 gap-2">
+        {([
+          ["basePrice", "Hus (grundpris)"],
+          ["boatPrice", "Båt (veckopris)"],
+          ["cleaningPrice", "Städning"],
+          ["linenPrice", "Lakan"],
+        ] as [keyof CustomPricing, string][]).map(([key, label]) => (
+          <div key={key}>
+            <label className="mb-0.5 block text-xs text-gray-500">{label}</label>
+            <input
+              type="number"
+              value={pricing[key] ?? ""}
+              onChange={e => num(key, e.target.value)}
+              className="input-dark w-full"
+              placeholder="Standard"
+            />
+          </div>
+        ))}
+      </div>
+      <label className="flex items-center gap-2 cursor-pointer mt-1">
+        <input
+          type="checkbox"
+          checked={suppress}
+          onChange={e => onSuppressChange(e.target.checked)}
+          style={{ accentColor: "#2563eb" }}
+        />
+        <span className="text-xs text-gray-300">Skicka inte bekräftelsemejl till gäster</span>
+      </label>
+    </div>
+  );
+}
+
 function EditUserRow({
   user,
   properties,
@@ -168,6 +222,8 @@ function EditUserRow({
   const [phone, setPhone] = useState(user.phone ?? "");
   const [password, setPassword] = useState("");
   const [selectedProperties, setSelectedProperties] = useState<string[]>(user.propertyIds);
+  const [pricing, setPricing] = useState<CustomPricing>(user.customPricing ?? {});
+  const [suppress, setSuppress] = useState(user.suppressGuestEmails ?? false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -176,7 +232,11 @@ function EditUserRow({
     setError(null);
     const body: Record<string, unknown> = { name, role, phone };
     if (password) body.password = password;
-    if (role === "PARTNER") body.propertyIds = selectedProperties;
+    if (role === "PARTNER") {
+      body.propertyIds = selectedProperties;
+      body.customPricing = Object.keys(pricing).length > 0 ? pricing : null;
+      body.suppressGuestEmails = suppress;
+    }
 
     const res = await fetch(`/api/users/${user.id}`, {
       method: "PATCH",
@@ -238,11 +298,19 @@ function EditUserRow({
         />
       </div>
       {role === "PARTNER" && (
-        <PropertyCheckboxes
-          properties={properties}
-          selected={selectedProperties}
-          onChange={setSelectedProperties}
-        />
+        <>
+          <PropertyCheckboxes
+            properties={properties}
+            selected={selectedProperties}
+            onChange={setSelectedProperties}
+          />
+          <PartnerPricingFields
+            pricing={pricing}
+            onChange={setPricing}
+            suppress={suppress}
+            onSuppressChange={setSuppress}
+          />
+        </>
       )}
       {error && <p className="text-xs text-red-400">{error}</p>}
       <div className="flex gap-2">
@@ -273,6 +341,8 @@ function AddUserForm({ properties, onCreated, onCancel }: { properties: Property
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("PARTNER");
   const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
+  const [pricing, setPricing] = useState<CustomPricing>({});
+  const [suppress, setSuppress] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -282,7 +352,11 @@ function AddUserForm({ properties, onCreated, onCancel }: { properties: Property
     setError(null);
 
     const body: Record<string, unknown> = { name, email, password, role, phone: phone || undefined };
-    if (role === "PARTNER") body.propertyIds = selectedProperties;
+    if (role === "PARTNER") {
+      body.propertyIds = selectedProperties;
+      body.customPricing = Object.keys(pricing).length > 0 ? pricing : undefined;
+      body.suppressGuestEmails = suppress;
+    }
 
     const res = await fetch("/api/users", {
       method: "POST",
@@ -337,11 +411,19 @@ function AddUserForm({ properties, onCreated, onCancel }: { properties: Property
         <input required type="password" autoComplete="new-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="input-dark w-full" placeholder="Minst 6 tecken" />
       </div>
       {role === "PARTNER" && (
-        <PropertyCheckboxes
-          properties={properties}
-          selected={selectedProperties}
-          onChange={setSelectedProperties}
-        />
+        <>
+          <PropertyCheckboxes
+            properties={properties}
+            selected={selectedProperties}
+            onChange={setSelectedProperties}
+          />
+          <PartnerPricingFields
+            pricing={pricing}
+            onChange={setPricing}
+            suppress={suppress}
+            onSuppressChange={setSuppress}
+          />
+        </>
       )}
       {error && <p className="text-xs text-red-400">{error}</p>}
       <div className="flex gap-2">

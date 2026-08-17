@@ -100,13 +100,27 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
   const booking = await prisma.booking.findFirst({
     where: { id: params.id, addonToken: token },
-    include: { property: { select: { name: true } } },
+    include: {
+      property: { select: { name: true } },
+      user: { select: { customPricing: true } },
+    },
   });
   if (!booking) return errorPage("Bokningen hittades inte eller länken är ogiltig.");
 
   const nights = Math.round(
     (booking.endDate.getTime() - booking.startDate.getTime()) / 86400000
   );
+
+  const cp = (booking.user?.customPricing ?? null) as {
+    basePrice?: number; boatPrice?: number; cleaningPrice?: number; linenPrice?: number;
+  } | null;
+  const customBoatWeekPrice = cp?.boatPrice ?? null;
+  const customCleaningPrice = cp?.cleaningPrice ?? null;
+  const customLinenPrice    = cp?.linenPrice ?? null;
+
+  function resolveBoatPrice(weekPrice: number, n: number): number {
+    return boatPrice(customBoatWeekPrice ?? weekPrice, n);
+  }
 
   const base = process.env.NEXTAUTH_URL ?? "https://husbokningarnas.vercel.app";
   const addonBase = `${base}/api/bookings/${params.id}/addon?token=${token}`;
@@ -158,7 +172,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       };
 
       const totalBoatPrice = BOAT_TYPES.reduce(
-        (s, t) => s + addedCounts[t.id as BoatId] * boatPrice(t.weekPrice, nights), 0
+        (s, t) => s + addedCounts[t.id as BoatId] * resolveBoatPrice(t.weekPrice, nights), 0
       );
 
       if (totalBoatPrice === 0) {
@@ -238,7 +252,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       const id = t.id as BoatId;
       const max = avail[id];
       const cur = current[id];
-      const price = boatPrice(t.weekPrice, nights);
+      const price = resolveBoatPrice(t.weekPrice, nights);
       const extraAvail = max - cur;
       const availLabel = extraAvail <= 0
         ? `<div class="boat-unavail">Fullbokat</div>`
@@ -267,7 +281,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       <button class="btn" id="paybtn" disabled onclick="submit()">Betala</button>
       <script>
         var base="${formBase}";
-        var prices={boat6hp:${boatPrice(1750,nights)},boat99hp:${boatPrice(2250,nights)},boat20hp:${boatPrice(2750,nights)},boat25hp:${boatPrice(3250,nights)}};
+        var prices={boat6hp:${resolveBoatPrice(1750,nights)},boat99hp:${resolveBoatPrice(2250,nights)},boat20hp:${resolveBoatPrice(2750,nights)},boat25hp:${resolveBoatPrice(3250,nights)}};
         function val(id){return Math.max(0,+document.getElementById(id).value||0)}
         function dec(id){var el=document.getElementById(id);el.value=Math.max(0,val(id)-1);upd()}
         function inc(id,max){var el=document.getElementById(id);el.value=Math.min(max,val(id)+1);upd()}
@@ -294,7 +308,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       const payUrl = await createAddonCheckout({
         bookingId: booking.id,
         guestEmail: booking.guestEmail,
-        amountSEK: 2200,
+        amountSEK: customCleaningPrice ?? 2200,
         description: `Städning — ${booking.property.name}`,
         metadata: { addonType: "cleaning" },
         successUrl: `${base}/booking-paid?type=addon&item=st%C3%A4dning`,
@@ -305,7 +319,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     // Fallback
     await prisma.booking.update({ where: { id: booking.id }, data: { cleaning: true } });
-    return successPage(`Städning (2 200 kr) beställd till ${booking.property.name}!`);
+    return successPage(`Städning (${(customCleaningPrice ?? 2200).toLocaleString("sv-SE")} kr) beställd till ${booking.property.name}!`);
   }
 
   // ── Lakan ─────────────────────────────────────────────────────────────────────
@@ -316,7 +330,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       const payUrl = await createAddonCheckout({
         bookingId: booking.id,
         guestEmail: booking.guestEmail,
-        amountSEK: 220,
+        amountSEK: customLinenPrice ?? 220,
         description: `Lakan — ${booking.property.name}`,
         metadata: { addonType: "linen" },
         successUrl: `${base}/booking-paid?type=addon&item=lakan`,
@@ -327,7 +341,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     // Fallback
     await prisma.booking.update({ where: { id: booking.id }, data: { bedLinen: true } });
-    return successPage(`Lakan (220 kr) beställt till ${booking.property.name}!`);
+    return successPage(`Lakan (${(customLinenPrice ?? 220).toLocaleString("sv-SE")} kr) beställt till ${booking.property.name}!`);
   }
 
   return errorPage("Okänd åtgärd.");

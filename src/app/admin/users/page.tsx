@@ -15,6 +15,7 @@ export default async function AdminUsersPage() {
       orderBy: { name: "asc" },
       select: {
         id: true, name: true, email: true, role: true, phone: true, createdAt: true,
+        customPricing: true, suppressGuestEmails: true,
         propertyAccess: { select: { propertyId: true } },
       },
     }),
@@ -36,6 +37,8 @@ export default async function AdminUsersPage() {
             ...u,
             createdAt: u.createdAt.toISOString(),
             propertyIds: u.propertyAccess.map((a) => a.propertyId),
+            customPricing: u.customPricing as Record<string, number> | null,
+            suppressGuestEmails: u.suppressGuestEmails,
           }))}
           properties={properties}
           currentUserId={session.user.id}

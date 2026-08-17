@@ -14,11 +14,18 @@ export async function GET() {
 
   const users = await prisma.user.findMany({
     orderBy: { name: "asc" },
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    select: { id: true, name: true, email: true, role: true, phone: true, createdAt: true, customPricing: true, suppressGuestEmails: true },
   });
 
   return NextResponse.json(users);
 }
+
+const customPricingSchema = z.object({
+  basePrice: z.number().optional(),
+  boatPrice: z.number().optional(),
+  cleaningPrice: z.number().optional(),
+  linenPrice: z.number().optional(),
+}).optional();
 
 const createUserSchema = z.object({
   name: z.string().min(1),
@@ -27,6 +34,8 @@ const createUserSchema = z.object({
   role: z.nativeEnum(Role),
   phone: z.string().optional(),
   propertyIds: z.array(z.string()).optional(),
+  customPricing: customPricingSchema,
+  suppressGuestEmails: z.boolean().optional(),
 });
 
 export async function POST(req: Request) {
@@ -41,7 +50,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, email, password, role, phone, propertyIds } = parsed.data;
+  const { name, email, password, role, phone, propertyIds, customPricing, suppressGuestEmails } = parsed.data;
 
   const exists = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (exists) {
@@ -50,8 +59,12 @@ export async function POST(req: Request) {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
-    data: { name, email: email.toLowerCase().trim(), passwordHash, role, phone: phone || null },
-    select: { id: true, name: true, email: true, role: true, phone: true, createdAt: true },
+    data: {
+      name, email: email.toLowerCase().trim(), passwordHash, role, phone: phone || null,
+      customPricing: customPricing ?? undefined,
+      suppressGuestEmails: suppressGuestEmails ?? false,
+    },
+    select: { id: true, name: true, email: true, role: true, phone: true, createdAt: true, customPricing: true, suppressGuestEmails: true },
   });
 
   if (propertyIds && propertyIds.length > 0) {
