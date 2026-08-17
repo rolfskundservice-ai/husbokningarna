@@ -197,6 +197,12 @@ export async function POST(req: Request) {
         totalPriceSEK: totalPrice,
       }).catch(() => null);
 
+      if (!depositUrl && session.user.role === "PARTNER") {
+        // Stripe misslyckades — ta bort bokningen och returnera fel
+        await prisma.booking.delete({ where: { id: booking.id } });
+        return NextResponse.json({ error: "Kunde inte skapa betalningslänk. Kontrollera Stripe-konfigurationen." }, { status: 500 });
+      }
+
       if (depositUrl) {
         await prisma.booking.update({
           where: { id: booking.id },

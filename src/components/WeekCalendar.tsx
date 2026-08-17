@@ -601,7 +601,7 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, customPricing
         guestEmail: guestEmail || undefined,
         notes: notes || undefined,
         numberOfPersons: persons,
-        totalPrice: totalPrice ? parseInt(totalPrice, 10) : undefined,
+        totalPrice: isPartner ? (grandTotal > 0 ? grandTotal : undefined) : (totalPrice ? parseInt(totalPrice, 10) : undefined),
         ...boatCounts,
         cleaning,
         bedLinen,
@@ -617,10 +617,17 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, customPricing
     onBooked();
   }
 
+  const cleaningPrice = customPricing?.cleaningPrice ?? 2200;
+  const linenPrice    = customPricing?.linenPrice    ?? 220;
+
   function resolveBoatPrice(weekPrice: number): number {
     return boatPrice(customPricing?.boatPrice ?? weekPrice, nights);
   }
-  const boatTotal = BOAT_TYPES.reduce((s, t) => s + resolveBoatPrice(t.weekPrice) * boatCounts[t.id as BoatId], 0);
+  const boatTotal     = BOAT_TYPES.reduce((s, t) => s + resolveBoatPrice(t.weekPrice) * boatCounts[t.id as BoatId], 0);
+  const housePrice    = parseInt(totalPrice || "0") || 0;
+  const cleaningCost  = cleaning ? cleaningPrice : 0;
+  const linenCost     = bedLinen ? linenPrice : 0;
+  const grandTotal    = housePrice + boatTotal + cleaningCost + linenCost;
 
   return (
     <Modal onClose={onClose}>
@@ -688,11 +695,6 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, customPricing
                 placeholder="8000"
               />
             )}
-            {totalPrice && parseInt(totalPrice) > 0 && (
-              <p className="text-xs mt-1" style={{ color: "#fbbf24" }}>
-                {tr.deposit20}: {Math.round(parseInt(totalPrice) * 0.20).toLocaleString("sv-SE")} kr · {tr.remainder80}: {Math.round(parseInt(totalPrice) * 0.80).toLocaleString("sv-SE")} kr
-              </p>
-            )}
           </div>
         )}
 
@@ -756,12 +758,56 @@ function BookingFormModal({ start, end, propertyId, isPartner, tr, customPricing
             placeholder="Ankomstid, önskemål…" />
         </div>
 
+        {/* Summering — endast för partners */}
+        {isPartner && grandTotal > 0 && (
+          <div className="rounded-xl p-4 space-y-2" style={{ background: "rgba(37,99,235,0.08)", border: "1px solid rgba(37,99,235,0.2)" }}>
+            {housePrice > 0 && (
+              <div className="flex justify-between text-sm text-gray-300">
+                <span>Hyra</span>
+                <span>{housePrice.toLocaleString("sv-SE")} kr</span>
+              </div>
+            )}
+            {boatTotal > 0 && (
+              <div className="flex justify-between text-sm text-gray-300">
+                <span>{tr.boats}</span>
+                <span>{boatTotal.toLocaleString("sv-SE")} kr</span>
+              </div>
+            )}
+            {cleaning && (
+              <div className="flex justify-between text-sm text-gray-300">
+                <span>{tr.cleaning}</span>
+                <span>{cleaningCost.toLocaleString("sv-SE")} kr</span>
+              </div>
+            )}
+            {bedLinen && (
+              <div className="flex justify-between text-sm text-gray-300">
+                <span>{tr.bedLinen}</span>
+                <span>{linenCost.toLocaleString("sv-SE")} kr</span>
+              </div>
+            )}
+            <div className="border-t pt-2 mt-1" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+              <div className="flex justify-between text-sm font-bold text-white">
+                <span>Totalt</span>
+                <span>{grandTotal.toLocaleString("sv-SE")} kr</span>
+              </div>
+              <div className="flex justify-between text-xs mt-1" style={{ color: "#fbbf24" }}>
+                <span>{tr.deposit20} (att betala nu)</span>
+                <span>{Math.round(grandTotal * 0.20).toLocaleString("sv-SE")} kr</span>
+              </div>
+              <div className="flex justify-between text-xs" style={{ color: "#6b7280" }}>
+                <span>{tr.remainder80} (inom 14 dagar)</span>
+                <span>{Math.round(grandTotal * 0.80).toLocaleString("sv-SE")} kr</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {error && <p className="text-sm text-red-400">{error}</p>}
 
         <div className="flex justify-end gap-2 pt-1">
           <GhostBtn onClick={onClose}>{tr.cancel}</GhostBtn>
-          <PrimaryBtn type="submit" disabled={loading}>
-            {loading ? tr.booking : tr.book}
+          <PrimaryBtn type="submit" disabled={loading || (isPartner && grandTotal === 0)}>
+            {loading ? tr.booking : (isPartner ? `Betala ${Math.round(grandTotal * 0.20).toLocaleString("sv-SE")} kr` : tr.book)}
           </PrimaryBtn>
         </div>
       </form>
