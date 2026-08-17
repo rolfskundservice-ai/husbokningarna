@@ -947,7 +947,7 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-lg rounded-2xl p-6 shadow-2xl"
-        style={{ background: "#0e1320", border: "1px solid rgba(255,255,255,0.1)" }}>
+        style={{ background: "#0e1320", border: "1px solid rgba(255,255,255,0.1)", maxHeight: "90vh", overflowY: "auto" }}>
         {children}
       </div>
     </div>
