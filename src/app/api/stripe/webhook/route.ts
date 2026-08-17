@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
-import { sendAddonConfirmation } from "@/lib/email";
+import { sendAddonConfirmation, sendOwnerNotification } from "@/lib/email";
 import { assignBoatNumbers, parseBoatNumbers, formatBoatNumbers, boatPrice, BOAT_TYPES, BoatId } from "@/lib/boats";
 import { BookingStatus } from "@prisma/client";
 
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
-      include: { property: { select: { name: true } } },
+      include: { property: { select: { name: true } }, user: { select: { name: true } } },
     });
     if (!booking) return NextResponse.json({ ok: true });
 
@@ -45,6 +45,30 @@ export async function POST(req: Request) {
         where: { id: bookingId },
         data: { depositPaid: true, status: BookingStatus.CONFIRMED },
       });
+
+      const nights = Math.round(
+        (booking.endDate.getTime() - booking.startDate.getTime()) / 86400000
+      );
+      const boats = {
+        boat6hp: booking.boat6hp, boat99hp: booking.boat99hp,
+        boat20hp: booking.boat20hp, boat25hp: booking.boat25hp,
+      };
+
+      await sendOwnerNotification({
+        propertyName: booking.property.name,
+        startDate: booking.startDate.toISOString(),
+        endDate: booking.endDate.toISOString(),
+        guestName: booking.guestName,
+        guestEmail: booking.guestEmail,
+        numberOfPersons: booking.numberOfPersons,
+        boats,
+        boatNumbers: booking.boatNumbers ? booking.boatNumbers.split(",").map(Number).filter(Boolean) : [],
+        nights,
+        cleaning: booking.cleaning,
+        bedLinen: booking.bedLinen,
+        notes: booking.notes,
+        bookedBy: booking.user?.name ?? "Partner",
+      }).catch(() => {});
     }
 
     // ── Slutbetalning ────────────────────────────────────────────────────────

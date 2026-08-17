@@ -190,6 +190,7 @@ export async function POST(req: Request) {
     if (bookerEmail && totalPrice && totalPrice > 0) {
       depositUrl = await createDepositSession({
         bookingId: booking.id,
+        addonToken,
         guestEmail: bookerEmail,
         guestName: session.user.name || "Partner",
         propertyName: property.name,
@@ -211,8 +212,11 @@ export async function POST(req: Request) {
       }
     }
 
+    // Skicka inte ägarmailet för PARTNER — det skickas i webhooksen efter betalning
+    const notifyOwnerNow = session.user.role !== "PARTNER" || !depositUrl;
+
     await Promise.allSettled([
-      sendOwnerNotification({
+      notifyOwnerNow ? sendOwnerNotification({
         propertyName: property.name,
         startDate: booking.startDate.toISOString(),
         endDate: booking.endDate.toISOString(),
@@ -226,7 +230,7 @@ export async function POST(req: Request) {
         bedLinen: bedLinen ?? false,
         notes: notes ?? null,
         bookedBy: session.user.name,
-      }),
+      }) : Promise.resolve(),
       (!suppressGuest && guestEmail)
         ? sendGuestConfirmation({
             guestEmail,

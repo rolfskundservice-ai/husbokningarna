@@ -7,6 +7,7 @@ export function getStripe(): Stripe | null {
 
 export async function createDepositSession(params: {
   bookingId: string;
+  addonToken: string;
   guestEmail: string;
   guestName: string;
   propertyName: string;
@@ -37,7 +38,7 @@ export async function createDepositSession(params: {
     ],
     metadata: { bookingId: params.bookingId, type: "deposit" },
     success_url: `${base}/booking-paid?session_id={CHECKOUT_SESSION_ID}&type=deposit`,
-    cancel_url: `${base}/`,
+    cancel_url: `${base}/api/bookings/${params.bookingId}/cancel?token=${params.addonToken}`,
     payment_intent_data: {
       description: `Handpenning ${params.propertyName} — ${params.guestName}`,
     },
