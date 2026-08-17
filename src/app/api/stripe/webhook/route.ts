@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     if (type === "deposit") {
       await prisma.booking.update({
         where: { id: bookingId },
-        data: { depositPaid: true },
+        data: { depositPaid: true, status: BookingStatus.CONFIRMED },
       });
     }
 
